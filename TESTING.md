@@ -23,8 +23,8 @@ repository dependency.
 `tests/run` covers 32 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
-deduplication and retry safety. The GitHub Actions workflow runs the same suite
-and ShellCheck on every push and pull request.
+deduplication and retry safety. There is no CI runner; run `tests/run` locally
+before publishing a change.
 
 ## 2. Install the local checkout
 
