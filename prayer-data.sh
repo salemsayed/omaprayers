@@ -316,9 +316,12 @@ jq -s \
         hijri: {
           day: (.date.hijri.day // ""),
           month: (.date.hijri.month.en // ""),
+          monthAr: (.date.hijri.month.ar // ""),
           year: (.date.hijri.year // ""),
           weekday: (.date.hijri.weekday.en // ""),
-          display: ((.date.hijri.day // "") + " " + (.date.hijri.month.en // "") + " " + (.date.hijri.year // "") + " AH")
+          weekdayAr: (.date.hijri.weekday.ar // ""),
+          display: ((.date.hijri.day // "") + " " + (.date.hijri.month.en // "") + " " + (.date.hijri.year // "") + " AH"),
+          displayAr: ((.date.hijri.day // "") + " " + (.date.hijri.month.ar // "") + " " + (.date.hijri.year // "") + " هـ")
         },
         timings: {
           Imsak: timing("Imsak"),

@@ -83,8 +83,7 @@ Panel {
     var prayer = nextPrayer
     var day = todayDay
     if (!prayer || !day || prayer.date === day.date) return ""
-    return "Tomorrow " + Model.label(prayer.name, language)
-      + "  \u00b7  " + Model.formatClock(prayer.time, timeFormat)
+    return Model.tomorrowPrayerLabel(prayer, language, timeFormat)
   }
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
@@ -355,183 +354,212 @@ Panel {
         if (value === "r" || value === "R") root.refresh(true)
       }
 
-      Column {
-        id: content
-        width: parent.width
-        spacing: Style.spacing.panelGap
-
-        PanelHero {
-          width: parent.width
-          title: root.nextPrayer
-            ? Model.label(root.nextPrayer.name, root.language)
-            : "Prayer Times"
-          meta: root.nextPrayer
-            ? "IN " + Model.remaining(root.nextPrayer, root.nowTick)
-            : root.locationLabel
-          detail: root.nextPrayer
-            ? Model.formatClock(root.nextPrayer.time, root.timeFormat)
-            : ""
-          foreground: root.foreground
-          fontFamily: root.fontFamily
-          iconComponent: Component {
-            Text {
-              text: "\ueed3"
-              color: root.nextPrayer ? Color.accent : root.dim
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.display
-            }
-          }
-        }
-
-        Text {
-          visible: root.todayDay !== null
-          width: parent.width
-          text: {
-            var parts = [root.locationLabel]
-            var hijri = Model.hijriLabel(root.todayDay)
-            if (hijri) parts.push(hijri)
-            return parts.join("  \u00b7  ")
-          }
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          font.bold: true
-          elide: Text.ElideRight
-        }
-
-        Text {
-          visible: root.statusMessage !== ""
-          width: parent.width
-          text: root.statusMessage
-          color: root.lastError !== "" && !root.schedule ? root.urgent : root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.bodySmall
-          wrapMode: Text.WordWrap
-        }
+      Flickable {
+        id: panelScroll
+        anchors.fill: parent
+        contentWidth: width
+        contentHeight: content.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
 
         Column {
-          visible: root.prayerRows.length > 0
-          width: parent.width
-          spacing: Style.space(2)
+          id: content
+          width: panelScroll.width
+          spacing: Style.spacing.panelGap
 
-          Repeater {
-            model: root.prayerRows
-
-            Rectangle {
-              required property var modelData
-              readonly property bool isNext: root.nextPrayer !== null && root.todayDay !== null
-                && root.nextPrayer.name === modelData.name
-                && root.nextPrayer.date === root.todayDay.date
-              readonly property bool isCurrent: root.currentPrayer !== null && root.todayDay !== null
-                && root.currentPrayer.name === modelData.name
-                && root.currentPrayer.date === root.todayDay.date
-
-              width: parent.width
-              height: Style.spacing.popupRowHeight
-              radius: Style.cornerRadius
-              color: isNext ? Style.selectedFillFor(root.foreground, Color.accent) : "transparent"
-
+          PanelHero {
+            width: parent.width
+            title: root.nextPrayer
+              ? Model.label(root.nextPrayer.name, root.language)
+              : "Prayer Times"
+            meta: root.nextPrayer
+              ? "IN " + Model.remaining(root.nextPrayer, root.nowTick)
+              : root.locationLabel
+            detail: root.nextPrayer
+              ? Model.formatClock(root.nextPrayer.time, root.timeFormat)
+              : ""
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+            iconComponent: Component {
               Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: Model.label(parent.modelData.name, root.language)
-                color: parent.isNext ? Color.accent : root.foreground
+                text: "\ueed3"
+                color: root.nextPrayer ? Color.accent : root.dim
                 font.family: root.fontFamily
-                font.pixelSize: Style.font.body
-                font.bold: parent.isNext || parent.isCurrent
-              }
-
-              Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: Model.formatClock(parent.modelData.value.time, root.timeFormat)
-                color: parent.isNext ? Color.accent : root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.body
-                font.bold: parent.isNext
+                font.pixelSize: Style.font.display
               }
             }
           }
-        }
 
-        Text {
-          visible: root.tomorrowPrayerText !== ""
-          width: parent.width
-          text: root.tomorrowPrayerText
-          color: Color.accent
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.bodySmall
-          font.bold: true
-        }
+          Text {
+            visible: root.todayDay !== null
+            width: parent.width
+            text: {
+              var parts = [root.locationLabel]
+              var hijri = Model.hijriLabel(root.todayDay, root.language)
+              if (hijri) parts.push(root.language === "Arabic" ? "\u2068" + hijri + "\u2069" : hijri)
+              return parts.join("  \u00b7  ")
+            }
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            font.bold: true
+            elide: Text.ElideRight
+          }
 
-        Rectangle {
-          visible: root.nightRows.length > 0
-          width: parent.width
-          height: Style.spacing.hairline
-          color: root.foreground
-          opacity: 0.12
-        }
+          Text {
+            visible: root.statusMessage !== ""
+            width: parent.width
+            text: root.statusMessage
+            color: root.lastError !== "" && !root.schedule ? root.urgent : root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            wrapMode: Text.WordWrap
+          }
 
-        Column {
-          visible: root.nightRows.length > 0
-          width: parent.width
-          spacing: Style.space(4)
+          Column {
+            visible: root.prayerRows.length > 0
+            width: parent.width
+            spacing: Style.space(2)
 
-          Repeater {
-            model: root.nightRows
+            Repeater {
+              model: root.prayerRows
 
-            Row {
-              required property var modelData
-              width: parent.width
-              spacing: Style.space(8)
+              Rectangle {
+                required property var modelData
+                readonly property bool isNext: root.nextPrayer !== null && root.todayDay !== null
+                  && root.nextPrayer.name === modelData.name
+                  && root.nextPrayer.date === root.todayDay.date
+                readonly property bool isCurrent: root.currentPrayer !== null && root.todayDay !== null
+                  && root.currentPrayer.name === modelData.name
+                  && root.currentPrayer.date === root.todayDay.date
 
-              Text {
-                width: parent.width - nightTime.width - parent.spacing
-                text: Model.label(parent.modelData.name, root.language)
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                horizontalAlignment: Text.AlignLeft
-              }
+                width: parent.width
+                height: Style.spacing.popupRowHeight
+                radius: Style.cornerRadius
+                color: isNext
+                  ? Style.selectedFillFor(root.foreground, Color.accent)
+                  : (isCurrent ? Style.normalFillFor(root.foreground, Color.accent) : "transparent")
 
-              Text {
-                id: nightTime
-                text: Model.formatClock(parent.modelData.value.time, root.timeFormat)
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
+                Text {
+                  id: prayerLabel
+                  anchors.left: parent.left
+                  anchors.right: prayerTime.left
+                  anchors.rightMargin: Style.space(20)
+                  anchors.baseline: prayerTime.baseline
+                  text: Model.label(parent.modelData.name, root.language)
+                  color: parent.isNext
+                    ? Style.selectedStateColor(root.foreground, Color.accent)
+                    : root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                  font.bold: parent.isNext || parent.isCurrent
+                  elide: Text.ElideRight
+                }
+
+                Text {
+                  id: prayerTime
+                  anchors.right: parent.right
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: Model.formatClock(parent.modelData.value.time, root.timeFormat)
+                  color: parent.isNext
+                    ? Style.selectedStateColor(root.foreground, Color.accent)
+                    : root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                  font.bold: parent.isNext
+                }
               }
             }
           }
-        }
 
-        Rectangle {
-          width: parent.width
-          height: Style.spacing.hairline
-          color: root.foreground
-          opacity: 0.12
-        }
-
-        Text {
-          width: parent.width
-          text: {
-            var method = root.todayDay ? String(root.todayDay.methodName || "Method " + root.calculationMethod) : "Method " + root.calculationMethod
-            var freshness = root.schedule ? root.schedule.status : "not loaded"
-            return method + "  \u00b7  " + root.timezone + "  \u00b7  " + freshness
+          Text {
+            visible: root.tomorrowPrayerText !== ""
+            width: parent.width
+            text: root.tomorrowPrayerText
+            color: Color.accent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            font.bold: true
+            elide: Text.ElideRight
           }
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
-        }
 
-        Text {
-          width: parent.width
-          text: "Right-click or press R to refresh"
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          opacity: 0.72
+          Rectangle {
+            visible: root.nightRows.length > 0
+            width: parent.width
+            height: Style.spacing.hairline
+            color: root.foreground
+            opacity: 0.12
+          }
+
+          Column {
+            visible: root.nightRows.length > 0
+            width: parent.width
+            spacing: Style.space(4)
+
+            Repeater {
+              model: root.nightRows
+
+              Item {
+                required property var modelData
+                width: parent.width
+                height: Math.max(nightLabel.implicitHeight, nightTime.implicitHeight)
+
+                Text {
+                  id: nightLabel
+                  anchors.left: parent.left
+                  anchors.right: nightTime.left
+                  anchors.rightMargin: Style.space(20)
+                  anchors.baseline: nightTime.baseline
+                  text: Model.label(parent.modelData.name, root.language)
+                  color: root.dim
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.bodySmall
+                  horizontalAlignment: Text.AlignLeft
+                  elide: Text.ElideRight
+                }
+
+                Text {
+                  id: nightTime
+                  anchors.right: parent.right
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: Model.formatClock(parent.modelData.value.time, root.timeFormat)
+                  color: root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.bodySmall
+                }
+              }
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: Style.spacing.hairline
+            color: root.foreground
+            opacity: 0.12
+          }
+
+          Text {
+            width: parent.width
+            text: {
+              var method = root.todayDay ? String(root.todayDay.methodName || "Method " + root.calculationMethod) : "Method " + root.calculationMethod
+              var freshness = Model.statusLabel(root.schedule ? root.schedule.status : "")
+              return method + "\u00a0\u00b7  " + root.timezone + "\u00a0\u00b7  " + freshness
+            }
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+
+          Text {
+            width: parent.width
+            text: "Right-click or press R to refresh"
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            opacity: 0.72
+          }
         }
       }
     }

@@ -87,8 +87,17 @@ Sources: [Egyptian General Survey Authority prayer times](https://www.esa.gov.eg
 ### Presentation and Aether
 
 - The full panel rendered without clipping in the 1280x800 horizontal desktop.
-- English/24-hour and Arabic/12-hour views rendered; an Arabic night-row gap
-  found in inspection was corrected.
+- English/12-hour and Arabic/12-hour views rendered. Arabic night rows use a
+  fixed gutter and baseline-aligned label/time columns; the corrected layout
+  was inspected at both default text size and Omarchy text size 20.
+- At text size 20 the panel stayed clipped to its card, accepted an injected
+  mouse-wheel scroll, and revealed the initially hidden footer without painting
+  onto the desktop.
+- The disposable VM clock was isolated after Isha. Tomorrow's Arabic Fajr name,
+  separator, and 12-hour clock retained the intended order; network time was
+  then restored and reported synchronized.
+- A forced live refresh stored and displayed AlAdhan's Arabic Hijri month while
+  retaining the English fallback for older caches.
 - Tokyo Night and an Aether 4.28.0 generated light theme were inspected.
 - Aether applied its normal Omarchy v4 `colors.toml`; the open widget updated
   through native `Color` and `Style` tokens without Aether-specific code or a
@@ -106,6 +115,11 @@ disposable VM state:
 - `.vm/plugin-panel-tokyo-night.png`
 - `.vm/plugin-panel-aether-light.png`
 - `.vm/plugin-panel-aether-arabic.png`
+- `.vm/plugin-panel-aether-arabic-opus-final4.png`
+- `.vm/plugin-panel-aether-arabic-text20-top.png`
+- `.vm/plugin-panel-aether-arabic-text20-scrolled.png`
+- `.vm/plugin-panel-aether-arabic-tomorrow.png`
+- `.vm/plugin-panel-aether-english-opus-final.png`
 - `.vm/plugin-panel-final.png`
 - `.vm/prod-panel-default.png`
 - `.vm/prod-panel-vertical-compact.png`
@@ -118,7 +132,6 @@ The following need the physical Omarchy session or a purpose-built simulated
 clock and are not claimed by this VM run:
 
 - multi-monitor geometry;
-- non-default shell font/spacing scale extremes;
 - suspend/resume notification delivery through the real notification UI;
 - December 31 and month-end visual clock simulation;
 - long-running API availability and comparison against the user's local mosque

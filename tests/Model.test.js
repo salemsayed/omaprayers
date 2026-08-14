@@ -10,7 +10,11 @@ function day(date, offset, times) {
   for (const [name, clock] of Object.entries(times)) {
     timings[name] = value(`${date}T${clock}:00${offset}`, clock)
   }
-  return { date, timings, hijri: { display: "1 Test 1448 AH" } }
+  return {
+    date,
+    timings,
+    hijri: { display: "1 Test 1448 AH", displayAr: "1 اختبار 1448 هـ" }
+  }
 }
 
 const schedule = {
@@ -111,11 +115,21 @@ test("bar display modes are deterministic", () => {
   assert.equal(Model.barText(next, now, "English", "Countdown only", "24-hour"), "5m")
   assert.equal(Model.barText(next, now, "English", "Name + time", "12-hour"), "Dhuhr 1:00 PM")
   assert.equal(Model.barText(next, now, "English", "Name + countdown", "24-hour"), "Dhuhr 5m")
+  for (const mode of ["Icon only", "Countdown only", "Name + time", "Name + countdown"])
+    assert.equal(Model.barText(null, now, "English", mode, "24-hour"), "\ueed3")
+})
+
+test("tomorrow label isolates Arabic text from the LTR clock", () => {
+  const text = Model.tomorrowPrayerLabel({ name: "Fajr", time: "04:46" }, "Arabic", "12-hour")
+  assert.equal(text, "Tomorrow \u2068الفجر\u2069  ·  4:46 AM")
 })
 
 test("Arabic labels and English fallback work", () => {
   assert.equal(Model.label("Fajr", "Arabic"), "الفجر")
   assert.equal(Model.label("Unknown", "Arabic"), "Unknown")
+  const now = new Date("2026-08-14T12:55:00+03:00")
+  const next = Model.nextPrayer(schedule, now)
+  assert.equal(Model.barText(next, now, "Arabic", "Name + countdown", "24-hour"), "\u2068الظهر\u2069 5m")
 })
 
 test("tooltip includes location, time, and stale state", () => {
@@ -137,8 +151,17 @@ test("day and night rows honor visibility and missing values", () => {
 
 test("Hijri label uses display then falls back to fields", () => {
   assert.equal(Model.hijriLabel(Model.today(schedule)), "1 Test 1448 AH")
+  assert.equal(Model.hijriLabel(Model.today(schedule), "Arabic"), "1 اختبار 1448 هـ")
+  assert.equal(Model.hijriLabel({ hijri: { display: "2 Safar 1448 AH" } }, "Arabic"), "2 Safar 1448 AH")
   assert.equal(Model.hijriLabel({ hijri: { day: "2", month: "Safar", year: "1448" } }), "2 Safar 1448")
   assert.equal(Model.hijriLabel(null), "")
+})
+
+test("schedule status labels are user-facing", () => {
+  assert.equal(Model.statusLabel("fresh"), "online data")
+  assert.equal(Model.statusLabel("cached"), "saved data")
+  assert.equal(Model.statusLabel("stale"), "offline cache")
+  assert.equal(Model.statusLabel("error"), "not loaded")
 })
 
 test("configuration comparison normalizes numeric strings but catches every option", () => {

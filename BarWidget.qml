@@ -20,6 +20,7 @@ BarWidget {
   readonly property bool stale: schedule && schedule.status === "stale"
   readonly property bool unavailable: !schedule || schedule.ok !== true
   readonly property string displayText: Model.barText(nextPrayer, nowTick, language, barDisplay, timeFormat)
+  readonly property bool iconOnly: displayText === "\ueed3"
   readonly property string tooltipText: Model.tooltip(schedule, nextPrayer, nowTick, language, timeFormat)
   readonly property bool prayerSoon: isFinite(minutesToNext) && minutesToNext >= 0 && minutesToNext <= highlightBeforeMinutes
 
@@ -97,8 +98,8 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: root.displayText
-    fontSize: root.barDisplay === "Icon only" ? Style.bar.iconFont : Style.font.bodySmall
-    horizontalMargin: root.barDisplay === "Icon only" ? 7.5 : 8.5
+    fontSize: root.iconOnly ? Style.bar.iconFont : Style.font.bodySmall
+    horizontalMargin: root.iconOnly ? 7.5 : 8.5
     tooltipText: root.tooltipText
     active: root.prayerSoon
     activeColor: Color.accent

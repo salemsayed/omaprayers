@@ -98,7 +98,8 @@ make_fixture() {
           gregorian: { date: $gregorian, weekday: { en: "Friday" } },
           hijri: {
             day: "1", year: "1448",
-            month: { en: "Safar" }, weekday: { en: "Al Juma ah" }
+            month: { en: "Safar", ar: "صَفَر" },
+            weekday: { en: "Al Juma ah", ar: "الجمعة" }
           }
         },
         meta: { timezone: "Africa/Cairo", method: { name: "Egyptian General Authority of Survey" } }
@@ -124,6 +125,7 @@ jq -e --arg today "$today" '
   .ok == true and .status == "fresh" and .today == $today
   and (.days | length) >= 59
   and all(.days[]; .timings.Fajr.at | test("[+]03:00$"))
+  and all(.days[]; .hijri.displayAr == "1 صَفَر 1448 هـ")
 ' "$fresh_output" >/dev/null
 
 state_dir="$XDG_STATE_HOME/omarchy/prayer-times/salemsayed.prayer-times"

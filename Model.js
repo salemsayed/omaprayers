@@ -171,14 +171,21 @@ function formatClock(clock, format) {
   return displayHour + ":" + minute + " " + suffix
 }
 
+function tomorrowPrayerLabel(prayer, language, timeFormat) {
+  if (!prayer) return ""
+  return "Tomorrow \u2068" + label(prayer.name, language) + "\u2069  \u00b7  "
+    + formatClock(prayer.time, timeFormat)
+}
+
 function barText(next, now, language, mode, timeFormat) {
   var icon = "\ueed3"
   if (!next) return icon
   var prayer = label(next.name, language)
+  var displayPrayer = text(language) === "Arabic" ? "\u2068" + prayer + "\u2069" : prayer
   if (mode === "Icon only") return icon
   if (mode === "Countdown only") return remaining(next, now)
-  if (mode === "Name + time") return prayer + " " + formatClock(next.time, timeFormat)
-  return prayer + " " + remaining(next, now)
+  if (mode === "Name + time") return displayPrayer + " " + formatClock(next.time, timeFormat)
+  return displayPrayer + " " + remaining(next, now)
 }
 
 function tooltip(schedule, next, now, language, timeFormat) {
@@ -209,12 +216,21 @@ function nightRows(day) {
   return result
 }
 
-function hijriLabel(day) {
+function hijriLabel(day, language) {
   if (!day || !day.hijri) return ""
+  if (text(language) === "Arabic" && day.hijri.displayAr)
+    return text(day.hijri.displayAr)
   if (day.hijri.display) return text(day.hijri.display)
   return [day.hijri.day, day.hijri.month, day.hijri.year].filter(function(value) {
     return text(value) !== ""
   }).join(" ")
+}
+
+function statusLabel(status) {
+  if (status === "fresh") return "online data"
+  if (status === "cached") return "saved data"
+  if (status === "stale") return "offline cache"
+  return "not loaded"
 }
 
 function notificationEvents(schedule, previousEpoch, currentEpoch, beforeMinutes, graceMinutes) {
@@ -293,11 +309,13 @@ if (typeof module !== "undefined") {
     minutesUntil: minutesUntil,
     remaining: remaining,
     formatClock: formatClock,
+    tomorrowPrayerLabel: tomorrowPrayerLabel,
     barText: barText,
     tooltip: tooltip,
     dayRows: dayRows,
     nightRows: nightRows,
     hijriLabel: hijriLabel,
+    statusLabel: statusLabel,
     notificationEvents: notificationEvents,
     notificationText: notificationText,
     filePath: filePath,

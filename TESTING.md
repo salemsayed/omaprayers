@@ -14,7 +14,7 @@ tests/run
 shellcheck prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh tests/run
 ```
 
-`tests/run` covers 19 JavaScript model scenarios plus option validation,
+`tests/run` covers 21 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
 deduplication and retry safety. The GitHub Actions workflow runs the same suite
@@ -40,9 +40,10 @@ journalctl --user -u omarchy-shell -n 200 --no-pager
 ```
 
 Horizontal and vertical bars, Tokyo Night, an Aether-generated light theme,
-English/Arabic labels, 12/24-hour clocks, compact rows, invalid-setting UI, and
-keyboard refresh are VM-qualified. Non-default font scaling, multi-monitor
-geometry, and real suspend/resume remain physical-session checks.
+English/Arabic labels, 12/24-hour clocks, compact rows, invalid-setting UI,
+keyboard refresh, a post-Isha Arabic tomorrow line, and clipped scrolling at
+Omarchy text size 20 are VM-qualified. Multi-monitor geometry and real
+suspend/resume remain physical-session checks.
 
 ## 4. Data qualification
 
