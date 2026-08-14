@@ -172,22 +172,3 @@ OmaPrayers consumes Omarchy's current `Color`, `Style`, spacing, typography,
 and corner-radius tokens. Built-in, hand-authored, and
 [Aether](https://github.com/bjarneo/aether)-generated Omarchy v4 themes work
 through the same native boundary without an adapter or runtime dependency.
-
-### Verification
-
-The current implementation has been exercised in a disposable KVM guest built
-from the Omarchy 4.0.0 RC2 ISO. Live checks covered both panel layouts, Arabic
-and English, 12/24-hour clocks, all four bar positions, rotated vertical
-labels, post-Isha rollover to tomorrow's Fajr, cache recovery, IPC, settings,
-notifications, Tokyo Night, and an Aether-generated light theme. Clean shell
-loads produced no plugin warnings or crashes.
-
-The deterministic suite covers malformed providers, corrupt and stale caches,
-concurrent fetches, option boundaries, timezone and month rollover, layout
-geometry helpers, countdown localization, and notification boundaries. See
-[Testing](TESTING.md) for repeatable checks and the historical
-[VM report](docs/VM-TEST-REPORT.md) for its exact environment and qualification
-limits.
-
-The implementation and manifest validation were grounded against
-[`basecamp/omarchy` at `f0020448` on the `quattro` branch](https://github.com/basecamp/omarchy/blob/quattro/docs/omarchy-shell.md).
