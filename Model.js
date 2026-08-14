@@ -56,7 +56,8 @@ function sameNumber(left, right) {
 
 function sameConfig(actual, expected) {
   if (!actual || !expected) return false
-  return sameNumber(actual.latitude, expected.latitude)
+  return text(actual.locationLabel) === text(expected.locationLabel)
+    && sameNumber(actual.latitude, expected.latitude)
     && sameNumber(actual.longitude, expected.longitude)
     && text(actual.timezone) === text(expected.timezone)
     && number(actual.method, -1) === number(expected.method, -2)

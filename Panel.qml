@@ -223,7 +223,10 @@ Panel {
       ))
     }
 
-    if (!schedule) return
+    if (!schedule) {
+      if (currentEpoch - lastRefreshAttemptEpoch >= 600000) refresh(false)
+      return
+    }
     var nextRefresh = new Date(schedule.nextRefreshAt || "").getTime()
     var ageDue = Number(schedule.fetchedAtEpoch || 0) + refreshHours * 3600000
     var due = (isFinite(nextRefresh) && currentEpoch >= nextRefresh) || currentEpoch >= ageDue
