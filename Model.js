@@ -173,6 +173,9 @@ function formatClock(clock, format) {
 
 function tomorrowPrayerLabel(prayer, language, timeFormat) {
   if (!prayer) return ""
+  if (text(language) === "Arabic")
+    return "\u2067\u063a\u062f\u064b\u0627  " + label(prayer.name, language) + "  \u00b7  "
+      + formatClock(prayer.time, timeFormat) + "\u2069"
   return "Tomorrow \u2068" + label(prayer.name, language) + "\u2069  \u00b7  "
     + formatClock(prayer.time, timeFormat)
 }
@@ -181,11 +184,11 @@ function barText(next, now, language, mode, timeFormat) {
   var icon = "\ueed3"
   if (!next) return icon
   var prayer = label(next.name, language)
-  var displayPrayer = text(language) === "Arabic" ? "\u2068" + prayer + "\u2069" : prayer
   if (mode === "Icon only") return icon
   if (mode === "Countdown only") return remaining(next, now)
-  if (mode === "Name + time") return displayPrayer + " " + formatClock(next.time, timeFormat)
-  return displayPrayer + " " + remaining(next, now)
+  var value = mode === "Name + time" ? formatClock(next.time, timeFormat) : remaining(next, now)
+  if (text(language) === "Arabic") return "\u2067" + prayer + " " + value + "\u2069"
+  return prayer + " " + value
 }
 
 function tooltip(schedule, next, now, language, timeFormat) {

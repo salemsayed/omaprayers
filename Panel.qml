@@ -46,6 +46,7 @@ Panel {
   readonly property string methodSettings: String(setting("customMethodSettings", ""))
   readonly property string timeFormat: String(setting("timeFormat", "24-hour"))
   readonly property string language: String(setting("language", "English"))
+  readonly property bool isArabic: language === "Arabic"
   readonly property bool showSunrise: Model.bool(setting("showSunrise", true))
   readonly property bool showNightMarkers: Model.bool(setting("showNightMarkers", true))
   readonly property int refreshHours: Math.max(1, Math.round(Model.number(setting("refreshHours", 24), 24)))
@@ -367,6 +368,8 @@ Panel {
           id: content
           width: panelScroll.width
           spacing: Style.spacing.panelGap
+          LayoutMirroring.enabled: root.isArabic
+          LayoutMirroring.childrenInherit: true
 
           PanelHero {
             width: parent.width

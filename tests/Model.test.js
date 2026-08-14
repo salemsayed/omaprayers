@@ -121,7 +121,7 @@ test("bar display modes are deterministic", () => {
 
 test("tomorrow label isolates Arabic text from the LTR clock", () => {
   const text = Model.tomorrowPrayerLabel({ name: "Fajr", time: "04:46" }, "Arabic", "12-hour")
-  assert.equal(text, "Tomorrow \u2068الفجر\u2069  ·  4:46 AM")
+  assert.equal(text, "\u2067غدًا  الفجر  ·  4:46 AM\u2069")
 })
 
 test("Arabic labels and English fallback work", () => {
@@ -129,7 +129,8 @@ test("Arabic labels and English fallback work", () => {
   assert.equal(Model.label("Unknown", "Arabic"), "Unknown")
   const now = new Date("2026-08-14T12:55:00+03:00")
   const next = Model.nextPrayer(schedule, now)
-  assert.equal(Model.barText(next, now, "Arabic", "Name + countdown", "24-hour"), "\u2068الظهر\u2069 5m")
+  assert.equal(Model.barText(next, now, "Arabic", "Name + countdown", "24-hour"), "\u2067الظهر 5m\u2069")
+  assert.equal(Model.barText(next, now, "Arabic", "Name + time", "12-hour"), "\u2067الظهر 1:00 PM\u2069")
 })
 
 test("tooltip includes location, time, and stale state", () => {

@@ -88,8 +88,11 @@ Sources: [Egyptian General Survey Authority prayer times](https://www.esa.gov.eg
 
 - The full panel rendered without clipping in the 1280x800 horizontal desktop.
 - English/12-hour and Arabic/12-hour views rendered. Arabic night rows use a
-  fixed gutter and baseline-aligned label/time columns; the corrected layout
-  was inspected at both default text size and Omarchy text size 20.
+  fixed gutter and baseline-aligned label/time columns. Arabic mode mirrors the
+  full panel hierarchy with labels on the right and clocks on the left, while
+  the English regression retains labels on the left and clocks on the right.
+  The corrected layout was inspected at both default text size and Omarchy text
+  size 20.
 - At text size 20 the panel stayed clipped to its card, accepted an injected
   mouse-wheel scroll, and revealed the initially hidden footer without painting
   onto the desktop.
