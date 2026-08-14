@@ -36,9 +36,11 @@ and its `/v1/methods` endpoint.
 | `showNightMarkers` | `true` | Show Imsak, midnight, first third, and last third |
 | `highlightBeforeMinutes` | `15` | Apply the Omarchy accent color as the next prayer approaches |
 
-The plugin contains no fixed palette, popup dimensions, or font. It consumes
-the current Omarchy bar colors, `Color.accent`, `Style.font.*`,
-`Style.spacing.*`, and `Style.cornerRadius`.
+The plugin contains no fixed palette or font. It consumes the current Omarchy
+bar colors, `Color.accent`, `Style.font.*`, `Style.spacing.*`, and
+`Style.cornerRadius`; its panel bounds are also passed through Omarchy's scaled
+spacing helpers. Aether-generated themes work through these same native tokens
+and require no plugin-specific integration.
 
 ## Fetching and notifications
 

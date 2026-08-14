@@ -75,6 +75,13 @@ Panel {
   readonly property var currentPrayer: Model.currentPrayer(schedule, nowTick)
   readonly property var prayerRows: Model.dayRows(todayDay, showSunrise)
   readonly property var nightRows: showNightMarkers ? Model.nightRows(todayDay) : []
+  readonly property string tomorrowPrayerText: {
+    var prayer = nextPrayer
+    var day = todayDay
+    if (!prayer || !day || prayer.date === day.date) return ""
+    return "Tomorrow " + Model.label(prayer.name, language)
+      + "  \u00b7  " + Model.formatClock(prayer.time, timeFormat)
+  }
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property color dim: Qt.darker(foreground, 1.5)
@@ -376,10 +383,10 @@ Panel {
 
             Rectangle {
               required property var modelData
-              readonly property bool isNext: root.nextPrayer
+              readonly property bool isNext: root.nextPrayer !== null && root.todayDay !== null
                 && root.nextPrayer.name === modelData.name
                 && root.nextPrayer.date === root.todayDay.date
-              readonly property bool isCurrent: root.currentPrayer
+              readonly property bool isCurrent: root.currentPrayer !== null && root.todayDay !== null
                 && root.currentPrayer.name === modelData.name
                 && root.currentPrayer.date === root.todayDay.date
 
@@ -412,10 +419,9 @@ Panel {
         }
 
         Text {
-          visible: root.nextPrayer && root.todayDay && root.nextPrayer.date !== root.todayDay.date
+          visible: root.tomorrowPrayerText !== ""
           width: parent.width
-          text: "Tomorrow " + Model.label(root.nextPrayer.name, root.language)
-            + "  \u00b7  " + Model.formatClock(root.nextPrayer.time, root.timeFormat)
+          text: root.tomorrowPrayerText
           color: Color.accent
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
@@ -441,13 +447,15 @@ Panel {
             Row {
               required property var modelData
               width: parent.width
+              spacing: Style.space(8)
 
               Text {
-                width: parent.width - nightTime.width
+                width: parent.width - nightTime.width - parent.spacing
                 text: Model.label(parent.modelData.name, root.language)
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
+                horizontalAlignment: Text.AlignLeft
               }
 
               Text {

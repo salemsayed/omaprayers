@@ -46,6 +46,14 @@ installers. Runtime dependencies are already part of Omarchy's base system:
 - Bash, `curl`, `jq`, GNU `date`, `flock`, and coreutils;
 - `omarchy-notification-send` when notifications are enabled.
 
+### Aether compatibility
+
+[Aether](https://github.com/bjarneo/aether) is supported without an adapter or
+runtime dependency. Aether generates a normal Omarchy v4 theme and activates it
+through Omarchy; the widget then receives the resulting `Color` and `Style`
+tokens from the running shell. Keeping this boundary means the same widget also
+works with built-in and hand-authored Omarchy themes.
+
 The cache lives under:
 
 ```text
@@ -116,11 +124,15 @@ See [Configuration](docs/CONFIGURATION.md) for every option.
 - `Esc`: close the panel.
 - `Tab` / `Shift+Tab`: switch between adjacent Omarchy panels.
 
-## Deferred verification
+## Verification
 
-The code has intentionally not been executed or installed yet. The complete
-Omarchy-side verification sequence is in [TESTING.md](TESTING.md) for use when
-the machine is back on the Quattro partition.
+The plugin has been installed and exercised in a disposable KVM guest created
+from the Omarchy 4.0.0 RC2 ISO. This included real Quattro shell loading, live
+AlAdhan data, offline cache recovery, IPC, Arabic and 12-hour rendering,
+Shafi/Hanafi switching, notification deduplication, and native Tokyo Night and
+Aether-generated light themes. See [TESTING.md](TESTING.md) for the repeatable
+checks and [the VM report](docs/VM-TEST-REPORT.md) for scope and remaining
+hardware-only qualification.
 
 ## License
 

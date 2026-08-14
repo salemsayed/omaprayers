@@ -1,7 +1,9 @@
-# Deferred Omarchy verification
+# Verification guide
 
-These checks are intentionally deferred until the machine is booted into the
-Omarchy Quattro partition. None were run during initial implementation.
+The core checks below were run on 2026-08-14 in a disposable KVM installation
+of the Omarchy 4.0.0 RC2 ISO. The guest used a QCOW2 overlay and had no host
+block device attached. See [the VM report](docs/VM-TEST-REPORT.md) for the exact
+coverage and qualification limits.
 
 ## 1. Source and manifest checks
 
@@ -9,6 +11,7 @@ Omarchy Quattro partition. None were run during initial implementation.
 cd ~/Coding/omarchy-prayer-times
 omarchy plugin validate .
 node tests/Model.test.js
+bash tests/Scripts.test.sh
 ```
 
 ## 2. Install the local checkout
@@ -30,8 +33,9 @@ omarchy-shell salemsayed.prayer-times status
 journalctl --user -u omarchy-shell -n 200 --no-pager
 ```
 
-Check horizontal and vertical bar layouts, at least two contrasting Omarchy
-themes, non-default font scaling, keyboard open/close, and multi-monitor use.
+The horizontal bar, Tokyo Night, and an Aether-generated light theme are
+VM-qualified. Vertical bar layout, non-default font scaling, keyboard-only
+navigation, and multi-monitor behavior remain physical-session checks.
 
 ## 4. Data qualification
 

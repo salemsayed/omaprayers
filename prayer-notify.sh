@@ -26,12 +26,15 @@ if [[ -f $last_event_file ]]; then
 fi
 [[ $last_event == "$event_key" ]] && exit 0
 
+if [[ -n $body ]]; then
+  omarchy-notification-send "$title" "$body" || exit 1
+else
+  omarchy-notification-send "$title" || exit 1
+fi
+
+# Commit the deduplication key only after the notification helper succeeds. If
+# the desktop notification service is temporarily unavailable, the next live
+# widget instance can retry rather than silently losing this event.
 stage=$(mktemp "$state_dir/.notification.XXXXXX") || exit 1
 printf '%s\n' "$event_key" >"$stage" || exit 1
 mv "$stage" "$last_event_file" || exit 1
-
-if [[ -n $body ]]; then
-  omarchy-notification-send "$title" "$body"
-else
-  omarchy-notification-send "$title"
-fi
