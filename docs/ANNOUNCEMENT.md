@@ -40,8 +40,7 @@ want the mention.
 
 ## Notes
 
-- Publish `github.com/salemsayed/omaprayers` before using either announcement
-  variant; the repository URL is not live yet.
+- The repository is live at `github.com/salemsayed/omaprayers`.
 - Do not claim mosque iqama accuracy. The README is deliberately careful here and
   the announcement should match: these are calculated times, method-dependent.
 - If you post before the marketplace listing is approved, link the repo rather

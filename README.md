@@ -51,23 +51,25 @@ package installer.
 
 ## Install
 
-Until the public repository is created, install from this local checkout,
-enable the plugin, and place its widget on the bar:
+Install the plugin, then place its widget on the bar:
 
 ```bash
-omarchy plugin validate ~/Coding/omarchy-prayer-times
-omarchy plugin add file://$HOME/Coding/omarchy-prayer-times --enable
-omarchy plugin enable io.github.salemsayed.omaprayers
+omarchy plugin add https://github.com/salemsayed/omaprayers.git --enable
 omarchy bar move io.github.salemsayed.omaprayers --section right --index 0
 ```
 
 The manifest already declares `right` as the default section, so the explicit
-move is optional. After `github.com/salemsayed/omaprayers` is published, the
-first two commands can be replaced with:
+move is optional.
+
+To work from a local checkout instead:
 
 ```bash
-omarchy plugin add https://github.com/salemsayed/omaprayers.git --enable
+omarchy plugin validate ~/Coding/omaprayers
+omarchy plugin add file://$HOME/Coding/omaprayers --enable
 ```
+
+`omarchy plugin add` clones the source, so a local path must be a Git
+repository.
 
 ## Configure
 
