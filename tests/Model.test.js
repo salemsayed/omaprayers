@@ -68,6 +68,12 @@ test("parseEnvelope accepts objects and rejects malformed or non-object JSON", (
   assert.equal(Model.parseEnvelope("[]"), null)
 })
 
+test("Latin digit normalization covers Arabic and Persian forms", () => {
+  assert.equal(Model.latinDigits("٠١٢٣٤٥٦٧٨٩"), "0123456789")
+  assert.equal(Model.latinDigits("۰۱۲۳۴۵۶۷۸۹"), "0123456789")
+  assert.equal(Model.latinDigits("الجمعة أغسطس"), "الجمعة أغسطس")
+})
+
 test("next prayer crosses into tomorrow", () => {
   const next = Model.nextPrayer(schedule, new Date("2026-08-14T22:00:00+03:00"))
   assert.equal(next.name, "Fajr")
@@ -129,11 +135,11 @@ test("Arabic labels and English fallback work", () => {
   assert.equal(Model.label("Unknown", "Arabic"), "Unknown")
   const now = new Date("2026-08-14T12:55:00+03:00")
   const next = Model.nextPrayer(schedule, now)
-  assert.equal(Model.barText(next, now, "Arabic", "Name + countdown", "24-hour"), "\u2067الظهر 5m\u2069")
+  assert.equal(Model.barText(next, now, "Arabic", "Name + countdown", "24-hour"), "\u2067الظهر 5 د\u2069")
   assert.equal(Model.barText(next, now, "Arabic", "Name + time", "12-hour"), "\u2067الظهر 1:00 PM\u2069")
 })
 
-test("tooltip includes location, time, and stale state", () => {
+test("tooltip includes location, time, stale state, and tolerates an absent method", () => {
   const now = new Date("2026-08-14T12:55:00+03:00")
   const next = Model.nextPrayer(schedule, now)
   assert.equal(Model.tooltip({ ...schedule, status: "stale" }, next, now, "English", "24-hour"),
@@ -225,6 +231,106 @@ test("boolean and number coercion match settings storage", () => {
   assert.equal(Model.bool("false"), false)
   assert.equal(Model.number("12", 0), 12)
   assert.equal(Model.number("nope", 7), 7)
+})
+
+test("day segments cover a full day and wrap the final boundary", () => {
+  const segments = Model.daySegments(Model.today(schedule), true)
+  assert.equal(segments.reduce((total, segment) => total + segment.length, 0), 1440)
+  assert.equal(segments.at(-1).name, "Isha")
+  assert.equal(segments.at(-1).end, segments[0].start + 1440)
+  assert.ok(segments.at(-1).end > 1440)
+})
+
+test("day segments without sunrise let Fajr absorb the sunrise gap", () => {
+  const withSunrise = Model.daySegments(Model.today(schedule), true)
+  const withoutSunrise = Model.daySegments(Model.today(schedule), false)
+  assert.equal(withoutSunrise.length, withSunrise.length - 1)
+  assert.equal(withoutSunrise[0].name, "Fajr")
+  assert.equal(withoutSunrise[0].end, withSunrise[1].end)
+  assert.equal(withoutSunrise[0].length,
+    withSunrise[0].length + withSunrise[1].length)
+  assert.deepEqual(Model.daySegments(null, true), [])
+})
+
+test("night markers are ordered within the night band and include Isha", () => {
+  const band = Model.nightMarkers(Model.today(schedule))
+  assert.ok(band)
+  assert.equal(band.start, 19 * 60 + 35)
+  assert.equal(band.end, 4 * 60 + 45 + 1440)
+  assert.ok(band.marks.some(mark => mark.name === "Isha"))
+  assert.equal(band.marks.some(mark => mark.name === "Imsak"), false)
+  for (let index = 0; index < band.marks.length; index++) {
+    assert.ok(band.marks[index].fraction >= 0 && band.marks[index].fraction <= 1)
+    if (index > 0)
+      assert.ok(band.marks[index - 1].fraction <= band.marks[index].fraction)
+  }
+})
+
+test("method short names cover known ids and deterministic fallbacks", () => {
+  assert.equal(Model.methodShortName(5, "Egyptian General Authority of Survey"), "EGAS")
+  assert.equal(Model.methodShortName(42, "Egyptian General Authority of Survey"), "EGAS")
+  assert.equal(Model.methodShortName(42, ""), "METHOD 42")
+})
+
+test("duration formatting covers minutes, hours, Arabic, and invalid input", () => {
+  assert.equal(Model.formatDuration(45, "English"), "45m")
+  assert.equal(Model.formatDuration(180, "English"), "3h")
+  assert.equal(Model.formatDuration(95, "English"), "1h 35m")
+  assert.equal(Model.formatDuration(95, "Arabic"), "1 س 35 د")
+  assert.equal(Model.formatDuration(180, "Arabic"), "3 س")
+  assert.equal(Model.formatDuration(-1, "English"), "")
+})
+
+test("day fraction starts at Fajr and remains bounded through the cycle", () => {
+  const currentDay = Model.today(schedule)
+  assert.equal(Model.fractionOfDay(currentDay, new Date("2026-08-14T04:45:00+03:00")), 0)
+  assert.equal(Model.fractionOfDay(currentDay, new Date("2026-08-14T16:45:00+03:00")), 0.5)
+  const beforeFajr = Model.fractionOfDay(currentDay, new Date("2026-08-14T03:45:00+03:00"))
+  assert.ok(beforeFajr >= 0 && beforeFajr <= 1)
+  assert.equal(Model.fractionOfDay(null, new Date()), 0)
+})
+
+test("timing minutes and window labels use the shared duration helpers", () => {
+  assert.equal(Model.minutesOfDay({ time: "04:45 (+03)" }), 285)
+  assert.ok(Number.isNaN(Model.minutesOfDay({ time: "24:00" })))
+  assert.equal(Model.windowLabel({ length: 95 }, "English"), "1h 35m")
+  assert.equal(Model.windowLabel({ length: 95 }, "Arabic"), "1 س 35 د")
+})
+
+test("day segments unwrap an Isha boundary after midnight", () => {
+  const wrappedDay = day("2026-06-21", "+03:00", {
+    Fajr: "02:00", Sunrise: "03:30", Dhuhr: "12:00", Asr: "17:00",
+    Maghrib: "22:30", Isha: "01:00"
+  })
+  const segments = Model.daySegments(wrappedDay, true)
+  assert.equal(segments.reduce((total, segment) => total + segment.length, 0), 1440)
+  for (let index = 1; index < segments.length; index++)
+    assert.ok(segments[index].start > segments[index - 1].start)
+  assert.equal(segments.at(-1).end, segments[0].start + 1440)
+})
+
+test("remaining localizes Arabic units while two-argument calls stay unchanged", () => {
+  const now = new Date("2026-08-14T12:00:00+03:00")
+  assert.equal(Model.remaining({ at: new Date("2026-08-14T12:45:00+03:00") }, now, "Arabic"), "45 د")
+  assert.equal(Model.remaining({ at: new Date("2026-08-14T13:02:00+03:00") }, now, "Arabic"), "1 س 2 د")
+  assert.equal(Model.remaining({ at: new Date("2026-08-14T14:00:00+03:00") }, now, "Arabic"), "2 س")
+  assert.equal(Model.remaining({ at: now }, now, "Arabic"), "الآن")
+  assert.equal(Model.remaining({ at: new Date("2026-08-14T13:02:00+03:00") }, now), "1h 2m")
+  assert.equal(Model.remaining({ at: new Date("2026-08-14T14:00:00+03:00") }, now), "2h")
+})
+
+test("tooltip appends the full calculation method from the prayer day", () => {
+  const now = new Date("2026-08-14T12:55:00+03:00")
+  const withMethod = {
+    ...schedule,
+    status: "stale",
+    days: schedule.days.map(entry => entry.date === schedule.today
+      ? { ...entry, methodName: "Egyptian General Authority of Survey" }
+      : entry)
+  }
+  const next = Model.nextPrayer(withMethod, now)
+  assert.equal(Model.tooltip(withMethod, next, now, "English", "24-hour"),
+    "Cairo · Dhuhr in 5m (13:00) · stale cache · Egyptian General Authority of Survey")
 })
 
 console.log(`Model tests passed (${count} scenarios)`)

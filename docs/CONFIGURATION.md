@@ -8,6 +8,7 @@ Omarchy Quattro stores widget settings directly on the widget's entry in
 | Setting | Default | Meaning |
 |---|---:|---|
 | `locationLabel` | `Cairo` | Human-readable label only |
+| `locationLabelAr` | empty | Label shown in Arabic mode when set; otherwise `locationLabel` is used |
 | `latitude` | `30.0444` | Prayer-location latitude |
 | `longitude` | `31.2357` | Prayer-location longitude |
 | `timezone` | `Africa/Cairo` | Installed IANA timezone for that location |
@@ -33,18 +34,28 @@ and its `/v1/methods` endpoint.
 
 | Setting | Default | Values |
 |---|---:|---|
+| `panelStyle` | `Horizon` | `Horizon` draws the day to scale with window lengths; `Compact` is the ruled timetable card |
 | `timeFormat` | `24-hour` | `24-hour`, `12-hour` |
 | `language` | `English` | `English`, `Arabic` |
-| `barDisplay` | `Name + countdown` | `Icon only`, `Name + countdown`, `Name + time`, `Countdown only` |
+| `arabicFont` | `Noto Naskh Arabic` | Font family used for Arabic prayer names, dates, and countdown units |
+| `barDisplay` | `Strip + countdown` | `Strip + countdown`, `Icon only`, `Name + countdown`, `Name + time`, `Countdown only` |
 | `showSunrise` | `true` | Show sunrise as an informational row |
 | `showNightMarkers` | `true` | Show Imsak, midnight, first third, and last third |
 | `highlightBeforeMinutes` | `15` | Apply the Omarchy accent color as the next prayer approaches |
 
-The plugin contains no fixed palette or font. It consumes the current Omarchy
-bar colors, `Color.accent`, `Style.font.*`, `Style.spacing.*`, and
+The plugin contains no bundled palette or font files. It consumes the current
+Omarchy bar colors, `Color.accent`, `Style.font.*`, `Style.spacing.*`, and
 `Style.cornerRadius`; its panel bounds are also passed through Omarchy's scaled
 spacing helpers. Aether-generated themes work through these same native tokens
 and require no plugin-specific integration.
+
+`Noto Naskh Arabic` must be installed when Arabic mode is used. Arch and
+Omarchy ship it in the `noto-fonts` package. The bar's monospace font has no
+Arabic glyphs, which is why `arabicFont` is configurable separately.
+
+The `Strip + countdown` chip is used on horizontal bars. Left and right
+vertical bars replace it with the rotated text label because the horizontal
+mini strip does not fit their width.
 
 ## Fetching and notifications
 
@@ -66,13 +77,16 @@ panel shows a warning if all three attempts fail.
 {
   "id": "salemsayed.prayer-times",
   "locationLabel": "Cairo",
+  "locationLabelAr": "القاهرة",
   "latitude": "30.0444",
   "longitude": "31.2357",
   "timezone": "Africa/Cairo",
   "calculationMethod": 5,
   "hanafi": false,
+  "panelStyle": "Horizon",
   "timeFormat": "24-hour",
-  "barDisplay": "Name + countdown",
+  "arabicFont": "Noto Naskh Arabic",
+  "barDisplay": "Strip + countdown",
   "notifications": true,
   "notifyBeforeMinutes": 10
 }

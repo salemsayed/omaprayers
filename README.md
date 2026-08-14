@@ -3,12 +3,16 @@
 A compact prayer-times widget for the Omarchy Quattro shell. It shows the next
 prayer in the bar and opens a native, theme-aware schedule panel.
 
+The `panelStyle` setting selects between two panel layouts. **Horizon** is the
+default and draws the prayer day to scale with window lengths; **Compact** is a
+ruled timetable card.
+
 This repository targets the official Omarchy `quattro` plugin contract:
 
 - schema-version 1 manifest at the repository root;
 - a `bar-widget` entry point extending Omarchy's `BarWidget`;
 - settings stored inline in `shell.json`;
-- native `Color`, `Style`, `WidgetButton`, `PanelHero`, and `KeyboardPanel`
+- native `Color`, `Style`, `WidgetButton`, and `KeyboardPanel`
   components;
 - installation through `omarchy plugin add` and placement through
   `omarchy plugin enable` / `omarchy bar move`.
@@ -73,6 +77,8 @@ The initial profile matches the current setup:
 - standard/Shafi Asr
 - angle-based high-latitude adjustment
 - 24-hour display
+- Horizon panel layout
+- strip and countdown bar display
 - notifications disabled
 
 All values can be changed from the widget settings generated from
@@ -102,6 +108,7 @@ Settings are inline on the bar entry, as required by Quattro. Examples:
 
 ```bash
 omarchy bar set salemsayed.prayer-times barDisplay "Icon only"
+omarchy bar set salemsayed.prayer-times panelStyle "Compact"
 omarchy bar set salemsayed.prayer-times timeFormat "12-hour"
 omarchy bar set salemsayed.prayer-times notifications true --json
 omarchy bar set salemsayed.prayer-times notifyBeforeMinutes 15 --json
@@ -122,10 +129,11 @@ See [Configuration](docs/CONFIGURATION.md) for every option.
 ## Controls
 
 - Left or middle click: toggle the schedule panel.
-- Right click: force an online refresh.
-- `R` while the panel is open: force refresh.
+- Refresh: right-click the bar widget, or press `R` while the panel is open.
 - `Esc`: close the panel.
 - `Tab` / `Shift+Tab`: switch between adjacent Omarchy panels.
+
+The panel does not reserve a row for a permanent refresh instruction.
 
 ## Verification
 

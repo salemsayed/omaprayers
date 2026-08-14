@@ -4,14 +4,19 @@
 
 `manifest.json` declares one third-party `bar-widget`. `BarWidget.qml` extends
 the official `BarWidget`, accepts the injected `bar`, `moduleName`, and
-`settings` properties, and hosts a lazily rendered detail panel. The popup uses
+`settings` properties, and hosts the detail panel. The popup uses
 the same ownership and popout-switch contract as the Quattro clock and weather
 widgets.
 
-`Panel.qml` owns refresh scheduling, notification crossing detection, the
-native Omarchy panel, and configuration projection. All colors, typography,
-spacing, corner radii, bar orientation, and panel placement come from the
-Omarchy shell.
+`Panel.qml` owns settings, data and cache state, IPC, notifications, refresh
+scheduling, and the native Omarchy panel. `PanelHorizon.qml` and
+`PanelCompact.qml` are pure presentation layouts. `Panel.qml` selects them with
+`Loader.setSource(url, { "host": root })`, which supplies the `host`
+back-reference as an initial property before any layout binding evaluates.
+
+All colors, typography, spacing, corner radii, bar orientation, and panel
+placement come from the Omarchy shell. The Loader also passes inherited
+`LayoutMirroring` into either presentation layout.
 
 ## Data layer
 
@@ -43,6 +48,12 @@ days are complete ISO-8601 instants.
 `Model.js` never constructs prayer timestamps from a bare `HH:mm` value.
 Countdowns, next/current prayer selection, tomorrow rollover, and notification
 crossings all compare ISO-8601 instants. Clock strings are presentation-only.
+
+Proportional layout geometry comes from the unit-tested `Model.daySegments`
+and `Model.nightMarkers` helpers. They unwrap boundaries that cross midnight,
+preserve a 24-hour day cycle, and normalize night marks to fractions. Explicit
+`x` coordinates are not affected by QML `LayoutMirroring`, so the Horizon
+strip, night band, and bar mini strip mirror their fraction positions manually.
 
 This keeps a location such as Cairo correct even if the computer is temporarily
 running in another timezone.

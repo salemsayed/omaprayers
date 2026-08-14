@@ -41,6 +41,13 @@ function text(value) {
   return value === undefined || value === null ? "" : String(value)
 }
 
+function latinDigits(value) {
+  return text(value).replace(/[\u0660-\u0669\u06f0-\u06f9]/g, function(digit) {
+    var code = digit.charCodeAt(0)
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660)
+  })
+}
+
 function number(value, fallback) {
   var parsed = Number(value)
   return isFinite(parsed) ? parsed : fallback
@@ -149,14 +156,11 @@ function minutesUntil(event, now) {
   return Math.ceil((event.at.getTime() - epoch) / 60000)
 }
 
-function remaining(event, now) {
+function remaining(event, now, language) {
   var minutes = minutesUntil(event, now)
   if (!isFinite(minutes)) return ""
-  if (minutes <= 0) return "now"
-  var hours = Math.floor(minutes / 60)
-  var rest = minutes % 60
-  if (hours <= 0) return rest + "m"
-  return hours + "h " + rest + "m"
+  if (minutes <= 0) return text(language) === "Arabic" ? "\u0627\u0644\u0622\u0646" : "now"
+  return formatDuration(minutes, language)
 }
 
 function formatClock(clock, format) {
@@ -169,6 +173,45 @@ function formatClock(clock, format) {
   var displayHour = hour % 12
   if (displayHour === 0) displayHour = 12
   return displayHour + ":" + minute + " " + suffix
+}
+
+function minutesOfDay(value) {
+  var match = /^(\d{1,2}):(\d{2})/.exec(text(value && value.time))
+  if (!match) return NaN
+  var hour = parseInt(match[1], 10)
+  var minute = parseInt(match[2], 10)
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return NaN
+  return hour * 60 + minute
+}
+
+function formatDuration(minutes, language) {
+  var value = Number(minutes)
+  if (!isFinite(value) || value < 0) return ""
+  value = Math.round(value)
+  var hours = Math.floor(value / 60)
+  var rest = value % 60
+  var hourUnit = text(language) === "Arabic" ? " س" : "h"
+  var minuteUnit = text(language) === "Arabic" ? " د" : "m"
+  if (hours <= 0) return rest + minuteUnit
+  if (rest === 0) return hours + hourUnit
+  return hours + hourUnit + " " + rest + minuteUnit
+}
+
+function methodShortName(methodId, fallbackName) {
+  var names = {
+    0: "JAFARI", 1: "UISK", 2: "ISNA", 3: "MWL", 4: "UMQ", 5: "EGAS",
+    7: "TEHRAN", 8: "GULF", 9: "KUWAIT", 10: "QATAR", 11: "MUIS",
+    12: "UOIF", 13: "DIYANET", 14: "SAMR", 15: "MOONSIGHT", 16: "DUBAI",
+    17: "JAKIM", 18: "TUNISIA", 19: "ALGERIA", 20: "KEMENAG",
+    21: "MOROCCO", 22: "LISBOA", 23: "JORDAN", 99: "CUSTOM"
+  }
+  if (names[methodId] !== undefined) return names[methodId]
+  var words = text(fallbackName).match(/[A-Za-z0-9]+/g) || []
+  var acronym = ""
+  for (var i = 0; i < words.length && acronym.length < 5; i++) {
+    if (words[i].length >= 3) acronym += words[i].charAt(0).toUpperCase()
+  }
+  return acronym || "METHOD " + methodId
 }
 
 function tomorrowPrayerLabel(prayer, language, timeFormat) {
@@ -185,8 +228,10 @@ function barText(next, now, language, mode, timeFormat) {
   if (!next) return icon
   var prayer = label(next.name, language)
   if (mode === "Icon only") return icon
-  if (mode === "Countdown only") return remaining(next, now)
-  var value = mode === "Name + time" ? formatClock(next.time, timeFormat) : remaining(next, now)
+  if (mode === "Countdown only") return remaining(next, now, language)
+  var value = mode === "Name + time"
+    ? formatClock(next.time, timeFormat)
+    : remaining(next, now, language)
   if (text(language) === "Arabic") return "\u2067" + prayer + " " + value + "\u2069"
   return prayer + " " + value
 }
@@ -196,8 +241,11 @@ function tooltip(schedule, next, now, language, timeFormat) {
   var location = schedule && schedule.config ? text(schedule.config.locationLabel) : ""
   var prefix = location ? location + " \u00b7 " : ""
   var stale = schedule && schedule.status === "stale" ? " \u00b7 stale cache" : ""
+  var prayerDay = dayForDate(schedule, next.date) || next.day
+  var methodName = prayerDay ? text(prayerDay.methodName) : ""
+  var method = methodName ? " \u00b7 " + methodName : ""
   return prefix + label(next.name, language) + " in " + remaining(next, now)
-    + " (" + formatClock(next.time, timeFormat) + ")" + stale
+    + " (" + formatClock(next.time, timeFormat) + ")" + stale + method
 }
 
 function dayRows(day, showSunrise) {
@@ -210,6 +258,36 @@ function dayRows(day, showSunrise) {
   return result
 }
 
+function daySegments(day, showSunrise) {
+  if (!day) return []
+  var boundaries = []
+  for (var i = 0; i < DAY_ORDER.length; i++) {
+    if (DAY_ORDER[i] === "Sunrise" && !showSunrise) continue
+    var value = timing(day, DAY_ORDER[i])
+    var minutes = minutesOfDay(value)
+    if (!value || !isFinite(minutes)) return []
+    while (boundaries.length && minutes <= boundaries[boundaries.length - 1].minutes)
+      minutes += 1440
+    if (boundaries.length && minutes >= boundaries[0].minutes + 1440) return []
+    boundaries.push({ name: DAY_ORDER[i], value: value, minutes: minutes })
+  }
+  var result = []
+  for (var b = 0; b < boundaries.length; b++) {
+    var start = boundaries[b].minutes
+    var end = b + 1 < boundaries.length
+      ? boundaries[b + 1].minutes
+      : boundaries[0].minutes + 1440
+    result.push({
+      name: boundaries[b].name,
+      value: boundaries[b].value,
+      start: start,
+      end: end,
+      length: end - start
+    })
+  }
+  return result
+}
+
 function nightRows(day) {
   var result = []
   for (var i = 0; i < NIGHT_ORDER.length; i++) {
@@ -217,6 +295,42 @@ function nightRows(day) {
     if (value) result.push({ name: NIGHT_ORDER[i], value: value })
   }
   return result
+}
+
+function nightMarkers(day) {
+  if (!day) return null
+  var start = minutesOfDay(timing(day, "Maghrib"))
+  var fajr = minutesOfDay(timing(day, "Fajr"))
+  if (!isFinite(start) || !isFinite(fajr)) return null
+  var end = fajr + 1440
+  var span = end - start
+  if (span <= 0) return null
+  var names = NIGHT_ORDER.slice(1)
+  names.push("Isha")
+  var marks = []
+  for (var i = 0; i < names.length; i++) {
+    var minutes = minutesOfDay(timing(day, names[i]))
+    if (!isFinite(minutes)) continue
+    if (minutes < start) minutes += 1440
+    var fraction = Math.max(0, Math.min(1, (minutes - start) / span))
+    marks.push({ name: names[i], minutes: minutes, fraction: fraction })
+  }
+  marks.sort(function(left, right) { return left.fraction - right.fraction })
+  return { start: start, end: end, span: span, marks: marks }
+}
+
+function fractionOfDay(day, now) {
+  var fajr = instant(timing(day, "Fajr"))
+  if (!fajr) return 0
+  var epoch = now instanceof Date ? now.getTime() : Number(now)
+  if (!isFinite(epoch)) return 0
+  var fraction = (epoch - fajr.getTime()) / 86400000
+  if (fraction < 0) fraction += 1
+  return Math.max(0, Math.min(1, fraction))
+}
+
+function windowLabel(segment, language) {
+  return formatDuration(segment ? segment.length : NaN, language)
 }
 
 function hijriLabel(day, language) {
@@ -300,6 +414,7 @@ if (typeof module !== "undefined") {
     DAY_ORDER: DAY_ORDER,
     NIGHT_ORDER: NIGHT_ORDER,
     parseEnvelope: parseEnvelope,
+    latinDigits: latinDigits,
     sameConfig: sameConfig,
     label: label,
     dayForDate: dayForDate,
@@ -312,11 +427,18 @@ if (typeof module !== "undefined") {
     minutesUntil: minutesUntil,
     remaining: remaining,
     formatClock: formatClock,
+    minutesOfDay: minutesOfDay,
+    formatDuration: formatDuration,
+    methodShortName: methodShortName,
     tomorrowPrayerLabel: tomorrowPrayerLabel,
     barText: barText,
     tooltip: tooltip,
     dayRows: dayRows,
+    daySegments: daySegments,
     nightRows: nightRows,
+    nightMarkers: nightMarkers,
+    fractionOfDay: fractionOfDay,
+    windowLabel: windowLabel,
     hijriLabel: hijriLabel,
     statusLabel: statusLabel,
     notificationEvents: notificationEvents,

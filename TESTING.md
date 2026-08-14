@@ -11,10 +11,16 @@ coverage and qualification limits.
 cd ~/Coding/omarchy-prayer-times
 omarchy plugin validate .
 tests/run
+/usr/lib/qt6/bin/qmllint -I ~/.cache/omarchy-shell-ref *.qml
 shellcheck prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh tests/run
 ```
 
-`tests/run` covers 21 JavaScript model scenarios plus option validation,
+`~/.cache/omarchy-shell-ref` is a local copy of the Omarchy shell's `qs`
+modules plus Quickshell's QML directory, allowing the `qs.Commons` and `qs.Ui`
+imports to resolve during linting. It is a developer convenience, not a
+repository dependency.
+
+`tests/run` covers 31 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
 deduplication and retry safety. The GitHub Actions workflow runs the same suite
@@ -39,11 +45,18 @@ omarchy-shell salemsayed.prayer-times status
 journalctl --user -u omarchy-shell -n 200 --no-pager
 ```
 
-Horizontal and vertical bars, Tokyo Night, an Aether-generated light theme,
-English/Arabic labels, 12/24-hour clocks, compact rows, invalid-setting UI,
-keyboard refresh, a post-Isha Arabic tomorrow line, and clipped scrolling at
-Omarchy text size 20 are VM-qualified. Multi-monitor geometry and real
-suspend/resume remain physical-session checks.
+The VM check list includes:
+
+- both Horizon and Compact panel layouts;
+- Arabic labels, localized countdowns, and Noto Naskh Arabic rendering;
+- the strip chip on a horizontal bar and its text-label fallback on a vertical
+  bar;
+- the post-Isha state where the next prayer is tomorrow's Fajr;
+- 12/24-hour clocks, invalid-setting UI, keyboard refresh, and clipped
+  scrolling at Omarchy text size 20;
+- Tokyo Night and an Aether-generated light theme.
+
+Multi-monitor geometry and real suspend/resume remain physical-session checks.
 
 ## 4. Data qualification
 
