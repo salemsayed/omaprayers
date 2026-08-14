@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "salemsayed.prayer-times",
+  "name": "Prayer Times",
+  "version": "0.1.0",
+  "author": "Salem Sayed",
+  "license": "MIT",
+  "description": "Accurate, timezone-safe prayer times with a compact native Omarchy panel",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Prayer Times",
+    "description": "Next prayer, countdown, Hijri date, monthly cache, and optional notifications",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "locationLabel": "Cairo",
+      "latitude": "30.0444",
+      "longitude": "31.2357",
+      "timezone": "Africa/Cairo",
+      "calculationMethod": 5,
+      "hanafi": false,
+      "highLatitudeRule": "Angle based",
+      "midnightMode": "Standard",
+      "shafaq": "General",
+      "hijriAdjustment": 0,
+      "tune": "0,0,0,0,0,0,0,0,0",
+      "customMethodSettings": "",
+      "timeFormat": "24-hour",
+      "language": "English",
+      "barDisplay": "Name + countdown",
+      "showSunrise": true,
+      "showNightMarkers": true,
+      "refreshHours": 24,
+      "highlightBeforeMinutes": 15,
+      "notifications": false,
+      "notifyBeforeMinutes": 10,
+      "notificationGraceMinutes": 10
+    },
+    "schema": [
+      { "key": "locationLabel", "type": "string", "label": "Location label", "defaultValue": "Cairo" },
+      { "key": "latitude", "type": "string", "label": "Latitude", "defaultValue": "30.0444", "description": "Explicit coordinates avoid ambiguous city matching." },
+      { "key": "longitude", "type": "string", "label": "Longitude", "defaultValue": "31.2357" },
+      { "key": "timezone", "type": "string", "label": "IANA timezone", "defaultValue": "Africa/Cairo", "description": "For example Africa/Cairo or Europe/London. This must match the prayer location." },
+      { "key": "calculationMethod", "type": "integer", "label": "AlAdhan method ID", "min": 0, "max": 99, "step": 1, "defaultValue": 5, "description": "5 is the Egyptian General Authority of Survey. Use 99 with custom method settings." },
+      { "key": "hanafi", "type": "boolean", "label": "Hanafi Asr", "defaultValue": false },
+      { "key": "highLatitudeRule", "type": "enum", "label": "High-latitude rule", "options": ["Middle of the night", "One seventh", "Angle based"], "defaultValue": "Angle based" },
+      { "key": "midnightMode", "type": "enum", "label": "Midnight calculation", "options": ["Standard", "Jafari"], "defaultValue": "Standard" },
+      { "key": "shafaq", "type": "enum", "label": "Shafaq", "options": ["General", "Red", "White"], "defaultValue": "General", "description": "Used by the Moonsighting Committee method." },
+      { "key": "hijriAdjustment", "type": "integer", "label": "Hijri date adjustment", "min": -2, "max": 2, "step": 1, "defaultValue": 0 },
+      { "key": "tune", "type": "string", "label": "Per-time tuning", "defaultValue": "0,0,0,0,0,0,0,0,0", "description": "Nine minute offsets: Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight." },
+      { "key": "customMethodSettings", "type": "string", "label": "Custom method settings", "defaultValue": "", "description": "For method 99: FajrAngle,MaghribAngleOrMinutes,IshaAngleOrMinutes." },
+      { "key": "timeFormat", "type": "enum", "label": "Time format", "options": ["24-hour", "12-hour"], "defaultValue": "24-hour" },
+      { "key": "language", "type": "enum", "label": "Prayer names", "options": ["English", "Arabic"], "defaultValue": "English" },
+      { "key": "barDisplay", "type": "enum", "label": "Bar display", "options": ["Icon only", "Name + countdown", "Name + time", "Countdown only"], "defaultValue": "Name + countdown" },
+      { "key": "showSunrise", "type": "boolean", "label": "Show sunrise", "defaultValue": true },
+      { "key": "showNightMarkers", "type": "boolean", "label": "Show midnight and thirds", "defaultValue": true },
+      { "key": "refreshHours", "type": "integer", "label": "Online refresh interval (hours)", "min": 1, "max": 168, "step": 1, "defaultValue": 24 },
+      { "key": "highlightBeforeMinutes", "type": "integer", "label": "Accent before prayer (minutes)", "min": 0, "max": 120, "step": 5, "defaultValue": 15 },
+      { "key": "notifications", "type": "boolean", "label": "Prayer notifications", "defaultValue": false },
+      { "key": "notifyBeforeMinutes", "type": "integer", "label": "Notify before prayer (minutes)", "min": 0, "max": 120, "step": 5, "defaultValue": 10 },
+      { "key": "notificationGraceMinutes", "type": "integer", "label": "Resume notification grace (minutes)", "min": 1, "max": 60, "step": 1, "defaultValue": 10 }
+    ]
+  }
+}
