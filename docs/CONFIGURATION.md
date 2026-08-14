@@ -75,7 +75,7 @@ panel shows a warning if all three attempts fail.
 
 ```json
 {
-  "id": "salemsayed.prayer-times",
+  "id": "io.github.salemsayed.omaprayers",
   "locationLabel": "Cairo",
   "locationLabelAr": "القاهرة",
   "latitude": "30.0444",

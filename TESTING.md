@@ -20,7 +20,7 @@ modules plus Quickshell's QML directory, allowing the `qs.Commons` and `qs.Ui`
 imports to resolve during linting. It is a developer convenience, not a
 repository dependency.
 
-`tests/run` covers 31 JavaScript model scenarios plus option validation,
+`tests/run` covers 32 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
 deduplication and retry safety. The GitHub Actions workflow runs the same suite
@@ -30,7 +30,7 @@ and ShellCheck on every push and pull request.
 
 ```bash
 omarchy plugin add file://$HOME/Coding/omarchy-prayer-times --enable
-omarchy bar move salemsayed.prayer-times --section right --index 0
+omarchy bar move io.github.salemsayed.omaprayers --section right --index 0
 omarchy plugin list
 ```
 
@@ -41,7 +41,7 @@ inline bar entry.
 
 ```bash
 omarchy-shell shell listPlugins | jq
-omarchy-shell salemsayed.prayer-times status
+omarchy-shell io.github.salemsayed.omaprayers status
 journalctl --user -u omarchy-shell -n 200 --no-pager
 ```
 
@@ -49,8 +49,8 @@ The VM check list includes:
 
 - both Horizon and Compact panel layouts;
 - Arabic labels, localized countdowns, and Noto Naskh Arabic rendering;
-- the strip chip on a horizontal bar and its text-label fallback on a vertical
-  bar;
+- the strip chip on a horizontal bar and its rotated text-label fallback on a
+  vertical bar;
 - the post-Isha state where the next prayer is tomorrow's Fajr;
 - 12/24-hour clocks, invalid-setting UI, keyboard refresh, and clipped
   scrolling at Omarchy text size 20;
@@ -91,13 +91,13 @@ display, Hijri adjustment, Arabic labels, and explicit timezone display.
 ## 6. Cleanup / rollback
 
 ```bash
-omarchy plugin disable salemsayed.prayer-times
-omarchy plugin remove salemsayed.prayer-times
+omarchy plugin disable io.github.salemsayed.omaprayers
+omarchy plugin remove io.github.salemsayed.omaprayers
 ```
 
 The cache is intentionally retained. Remove only this exact directory if a
 full reset is desired:
 
 ```bash
-rm -r -- "$HOME/.local/state/omarchy/prayer-times/salemsayed.prayer-times"
+rm -r -- "$HOME/.local/state/omarchy/io.github.salemsayed.omaprayers"
 ```

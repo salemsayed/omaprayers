@@ -7,8 +7,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "salemsayed.prayer-times"
-  ipcTarget: "salemsayed.prayer-times"
+  moduleName: "io.github.salemsayed.omaprayers"
+  ipcTarget: "io.github.salemsayed.omaprayers"
   manageIpc: false
 
   property var anchorItem: null
@@ -30,7 +30,7 @@ Panel {
   readonly property string dataScript: Model.filePath(Qt.resolvedUrl("prayer-data.sh"))
   readonly property string notificationScript: Model.filePath(Qt.resolvedUrl("prayer-notify.sh"))
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
-  readonly property string cachePath: stateHome + "/omarchy/prayer-times/salemsayed.prayer-times/current.json"
+  readonly property string cachePath: stateHome + "/omarchy/io.github.salemsayed.omaprayers/current.json"
 
   readonly property string locationLabel: String(setting("locationLabel", "Cairo"))
   readonly property string locationLabelAr: String(setting("locationLabelAr", ""))
@@ -95,7 +95,7 @@ Panel {
     return isArabic ? "\u2068" + hijri + "\u2069" : hijri
   }
   readonly property string footerText: methodShort + "  \u00b7  " + timezone + "  \u00b7  "
-    + Model.statusLabel(schedule ? schedule.status : "")
+    + Model.statusLabel(schedule ? schedule.status : "", language)
   readonly property string tomorrowPrayerText: {
     var prayer = nextPrayer
     var day = todayDay
@@ -215,12 +215,15 @@ Panel {
   }
 
   function statusText() {
-    if (!schedule) return lastError || "Prayer times are not loaded"
+    if (!schedule)
+      return lastError || (isArabic ? "مواقيت الصلاة غير محملة" : "Prayer times are not loaded")
     var next = Model.nextPrayer(schedule, nowTick)
     var nextText = next
-      ? Model.label(next.name, language) + " in " + Model.remaining(next, nowTick)
-      : "No upcoming prayer in cache"
-    return locationLabel + ": " + nextText + " [" + schedule.status + "]"
+      ? Model.label(next.name, language) + (isArabic ? " بعد " : " in ")
+        + Model.remaining(next, nowTick, language)
+      : (isArabic ? "لا توجد صلاة قادمة في النسخة المحفوظة" : "No upcoming prayer in cache")
+    return displayLocation + ": " + nextText + " ["
+      + Model.statusLabel(schedule.status, language) + "]"
   }
 
   function queueNotifications(events) {

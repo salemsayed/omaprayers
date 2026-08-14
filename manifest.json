@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "salemsayed.prayer-times",
-  "name": "Prayer Times",
-  "version": "1.0.0",
+  "id": "io.github.salemsayed.omaprayers",
+  "name": "OmaPrayers",
+  "version": "2.0.0",
   "author": "Salem Sayed",
   "license": "MIT",
-  "description": "Accurate, timezone-safe prayer times with a compact native Omarchy panel",
+  "description": "Prayer times in the Omarchy bar: a to-scale day strip or a ruled timetable, Arabic and English, offline cache and notifications.",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Prayer Times",
+    "displayName": "OmaPrayers",
     "description": "Next prayer, countdown, Hijri date, monthly cache, and optional notifications",
     "category": "Time",
     "allowMultiple": false,

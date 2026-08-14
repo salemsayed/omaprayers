@@ -128,7 +128,7 @@ jq -e --arg today "$today" '
   and all(.days[]; .hijri.displayAr == "1 صَفَر 1448 هـ")
 ' "$fresh_output" >/dev/null
 
-state_dir="$XDG_STATE_HOME/omarchy/prayer-times/salemsayed.prayer-times"
+state_dir="$XDG_STATE_HOME/omarchy/io.github.salemsayed.omaprayers"
 [[ $(stat -c '%a' "$state_dir") == 700 ]]
 [[ $(stat -c '%a' "$state_dir/current.json") == 600 ]]
 [[ $(wc -l <"$FAKE_CURL_LOG") == 2 ]]

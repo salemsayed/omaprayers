@@ -103,7 +103,7 @@ if [[ -n $method_settings ]]; then
 fi
 
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
-state_dir="$state_home/omarchy/prayer-times/salemsayed.prayer-times"
+state_dir="$state_home/omarchy/io.github.salemsayed.omaprayers"
 current_file="$state_dir/current.json"
 lock_file="$state_dir/fetch.lock"
 mkdir -p "$state_dir" || fail "could not create prayer state directory"

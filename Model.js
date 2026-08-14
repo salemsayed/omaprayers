@@ -236,15 +236,20 @@ function barText(next, now, language, mode, timeFormat) {
   return prayer + " " + value
 }
 
-function tooltip(schedule, next, now, language, timeFormat) {
-  if (!next) return "Prayer times unavailable"
-  var location = schedule && schedule.config ? text(schedule.config.locationLabel) : ""
+function tooltip(schedule, next, now, language, timeFormat, locationOverride) {
+  var arabic = text(language) === "Arabic"
+  if (!next) return arabic ? "مواقيت الصلاة غير متاحة" : "Prayer times unavailable"
+  var location = text(locationOverride)
+  if (!location && schedule && schedule.config) location = text(schedule.config.locationLabel)
   var prefix = location ? location + " \u00b7 " : ""
-  var stale = schedule && schedule.status === "stale" ? " \u00b7 stale cache" : ""
+  var stale = schedule && schedule.status === "stale"
+    ? " \u00b7 " + (arabic ? statusLabel("stale", language) : "stale cache")
+    : ""
   var prayerDay = dayForDate(schedule, next.date) || next.day
   var methodName = prayerDay ? text(prayerDay.methodName) : ""
   var method = methodName ? " \u00b7 " + methodName : ""
-  return prefix + label(next.name, language) + " in " + remaining(next, now)
+  return prefix + label(next.name, language) + (arabic ? " بعد " : " in ")
+    + remaining(next, now, language)
     + " (" + formatClock(next.time, timeFormat) + ")" + stale + method
 }
 
@@ -343,7 +348,13 @@ function hijriLabel(day, language) {
   }).join(" ")
 }
 
-function statusLabel(status) {
+function statusLabel(status, language) {
+  if (text(language) === "Arabic") {
+    if (status === "fresh") return "بيانات محدثة"
+    if (status === "cached") return "بيانات محفوظة"
+    if (status === "stale") return "نسخة محفوظة دون اتصال"
+    return "غير محمل"
+  }
   if (status === "fresh") return "online data"
   if (status === "cached") return "saved data"
   if (status === "stale") return "offline cache"
@@ -391,10 +402,23 @@ function notificationEvents(schedule, previousEpoch, currentEpoch, beforeMinutes
 
 function notificationText(event, language, timeFormat) {
   var prayer = label(event.name, language)
+  var arabic = text(language) === "Arabic"
   if (event.kind === "before") {
+    if (arabic) {
+      return {
+        title: prayer + " بعد " + formatDuration(event.minutes, language),
+        body: "الموعد " + formatClock(event.time, timeFormat)
+      }
+    }
     return {
       title: prayer + " in " + event.minutes + " minutes",
       body: "Scheduled for " + formatClock(event.time, timeFormat)
+    }
+  }
+  if (arabic) {
+    return {
+      title: "حان وقت " + prayer,
+      body: formatClock(event.time, timeFormat)
     }
   }
   return {

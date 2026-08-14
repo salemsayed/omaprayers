@@ -169,6 +169,10 @@ test("schedule status labels are user-facing", () => {
   assert.equal(Model.statusLabel("cached"), "saved data")
   assert.equal(Model.statusLabel("stale"), "offline cache")
   assert.equal(Model.statusLabel("error"), "not loaded")
+  assert.equal(Model.statusLabel("fresh", "Arabic"), "بيانات محدثة")
+  assert.equal(Model.statusLabel("cached", "Arabic"), "بيانات محفوظة")
+  assert.equal(Model.statusLabel("stale", "Arabic"), "نسخة محفوظة دون اتصال")
+  assert.equal(Model.statusLabel("error", "Arabic"), "غير محمل")
 })
 
 test("configuration comparison normalizes numeric strings but catches every option", () => {
@@ -213,8 +217,12 @@ test("resume grace admits recent events and rejects old ones", () => {
 
 test("notification copy follows language and clock format", () => {
   assert.deepEqual(Model.notificationText({ name: "Fajr", kind: "before", minutes: 10, time: "04:45" }, "Arabic", "12-hour"), {
-    title: "الفجر in 10 minutes",
-    body: "Scheduled for 4:45 AM"
+    title: "الفجر بعد 10 د",
+    body: "الموعد 4:45 AM"
+  })
+  assert.deepEqual(Model.notificationText({ name: "Fajr", kind: "at", time: "04:45" }, "Arabic", "24-hour"), {
+    title: "حان وقت الفجر",
+    body: "04:45"
   })
   assert.deepEqual(Model.notificationText({ name: "Isha", kind: "at", time: "21:00" }, "English", "24-hour"), {
     title: "It is time for Isha",
@@ -223,7 +231,7 @@ test("notification copy follows language and clock format", () => {
 })
 
 test("file URLs decode spaces", () => {
-  assert.equal(Model.filePath("file:///tmp/Prayer%20Times/data.sh"), "/tmp/Prayer Times/data.sh")
+  assert.equal(Model.filePath("file:///tmp/Plugin%20Data/data.sh"), "/tmp/Plugin Data/data.sh")
 })
 
 test("boolean and number coercion match settings storage", () => {
@@ -331,6 +339,8 @@ test("tooltip appends the full calculation method from the prayer day", () => {
   const next = Model.nextPrayer(withMethod, now)
   assert.equal(Model.tooltip(withMethod, next, now, "English", "24-hour"),
     "Cairo · Dhuhr in 5m (13:00) · stale cache · Egyptian General Authority of Survey")
+  assert.equal(Model.tooltip(withMethod, next, now, "Arabic", "24-hour", "القاهرة"),
+    "القاهرة · الظهر بعد 5 د (13:00) · نسخة محفوظة دون اتصال · Egyptian General Authority of Survey")
 })
 
 console.log(`Model tests passed (${count} scenarios)`)

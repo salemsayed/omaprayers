@@ -1,26 +1,135 @@
-# Omarchy Prayer Times
+# OmaPrayers
 
-A compact prayer-times widget for the Omarchy Quattro shell. It shows the next
-prayer in the bar and opens a native, theme-aware schedule panel.
+Prayer times for the Omarchy bar, with two native panel layouts, Arabic and
+English presentation, offline caching, and optional notifications.
 
-The `panelStyle` setting selects between two panel layouts. **Horizon** is the
-default and draws the prayer day to scale with window lengths; **Compact** is a
-ruled timetable card.
+## Screenshots
 
-This repository targets the official Omarchy `quattro` plugin contract:
+![OmaPrayers Horizon panel showing a prayer day drawn to scale](docs/images/panel-horizon.png)
 
-- schema-version 1 manifest at the repository root;
-- a `bar-widget` entry point extending Omarchy's `BarWidget`;
-- settings stored inline in `shell.json`;
-- native `Color`, `Style`, `WidgetButton`, and `KeyboardPanel`
-  components;
-- installation through `omarchy plugin add` and placement through
-  `omarchy plugin enable` / `omarchy bar move`.
+![OmaPrayers Compact panel showing the ruled timetable layout](docs/images/panel-compact.png)
 
-The implementation and final manifest validation were grounded against
-[`basecamp/omarchy` at `f0020448` on the `quattro` branch](https://github.com/basecamp/omarchy/blob/quattro/docs/omarchy-shell.md).
+![OmaPrayers panel rendered in Arabic with Noto Naskh Arabic](docs/images/panel-arabic.png)
 
-## Accuracy and resilience
+## What it does
+
+- **Horizon** is the default panel layout. It draws the prayer day to scale,
+  shows the current position, and compares the length of each prayer window.
+- **Compact** is a ruled timetable card with dot leaders, current/next state,
+  and a two-column night-marker grid.
+- The default horizontal bar chip combines a miniature day strip with the next
+  prayer countdown. Vertical bars use the same information as a rotated text
+  label.
+- Prayer names, dates, and countdowns support English and Arabic. Arabic text
+  uses a separately configurable Noto Naskh Arabic face.
+- The current and following month are cached locally, so a matching schedule
+  remains available when the network is down.
+- Optional prayer-time and advance notifications are deduplicated across
+  monitors and shell reloads.
+
+Controls:
+
+- Left or middle click toggles the panel.
+- Right-click the bar widget, or press `R` while the panel is open, to force an
+  online refresh.
+- `Esc` closes the panel.
+- `Tab` / `Shift+Tab` switches between adjacent Omarchy panels.
+
+## Requirements
+
+- Omarchy Quattro with its Quickshell-based plugin system.
+- `curl` and `jq`.
+- The `noto-fonts` package for Arabic mode (`Noto Naskh Arabic`).
+- Network access to the [AlAdhan API](https://aladhan.com/prayer-times-api) for
+  the initial calendar fetch. A matching cache is used for later offline
+  sessions.
+
+Omarchy supplies the other runtime pieces used by the plugin: Bash, GNU
+`date`, `flock`, coreutils, and `omarchy-notification-send` for optional
+notifications. OmaPrayers bundles no framework, font, audio file, daemon, or
+package installer.
+
+## Install
+
+Until the public repository is created, install from this local checkout,
+enable the plugin, and place its widget on the bar:
+
+```bash
+omarchy plugin validate ~/Coding/omarchy-prayer-times
+omarchy plugin add file://$HOME/Coding/omarchy-prayer-times --enable
+omarchy plugin enable io.github.salemsayed.omaprayers
+omarchy bar move io.github.salemsayed.omaprayers --section right --index 0
+```
+
+The manifest already declares `right` as the default section, so the explicit
+move is optional. After `github.com/salemsayed/omaprayers` is published, the
+first two commands can be replaced with:
+
+```bash
+omarchy plugin add https://github.com/salemsayed/omaprayers.git --enable
+```
+
+## Configure
+
+Settings are stored inline on the bar entry, as required by Quattro. Examples:
+
+```bash
+omarchy bar set io.github.salemsayed.omaprayers barDisplay "Icon only"
+omarchy bar set io.github.salemsayed.omaprayers panelStyle "Compact"
+omarchy bar set io.github.salemsayed.omaprayers timeFormat "12-hour"
+omarchy bar set io.github.salemsayed.omaprayers notifications true --json
+omarchy bar set io.github.salemsayed.omaprayers notifyBeforeMinutes 15 --json
+omarchy bar set io.github.salemsayed.omaprayers hanafi true --json
+```
+
+Changing location should update the label, coordinates, and timezone together:
+
+```bash
+omarchy bar set io.github.salemsayed.omaprayers locationLabel "Alexandria"
+omarchy bar set io.github.salemsayed.omaprayers latitude "31.2001"
+omarchy bar set io.github.salemsayed.omaprayers longitude "29.9187"
+omarchy bar set io.github.salemsayed.omaprayers timezone "Africa/Cairo"
+```
+
+See [Configuration](docs/CONFIGURATION.md) for every option.
+
+## Remove
+
+Disable and remove the plugin:
+
+```bash
+omarchy plugin disable io.github.salemsayed.omaprayers
+omarchy plugin remove io.github.salemsayed.omaprayers
+```
+
+The cache is deliberately retained so reinstalling does not require an
+immediate network fetch. To remove it too, delete only the exact state
+directory:
+
+```bash
+rm -r -- "$HOME/.local/state/omarchy/io.github.salemsayed.omaprayers"
+```
+
+When `XDG_STATE_HOME` is set, replace `$HOME/.local/state` with that value.
+
+## Data source and credits
+
+Prayer calendars come from the [AlAdhan API](https://aladhan.com/prayer-times-api).
+OmaPrayers requests calculated times for the explicit latitude, longitude,
+timezone, method, and adjustment settings supplied by the user; it does not
+infer a location from an IP address or ambiguous city name.
+
+The interface uses Omarchy's native Quickshell components and theme tokens.
+See [Third-party notices](THIRD_PARTY_NOTICES.md) for the reference material
+used during implementation.
+
+## License
+
+[MIT](LICENSE)
+
+## Accuracy and qualification
+
+### Accuracy and resilience
 
 - Uses explicit latitude, longitude, and IANA timezone settings. It never
   assumes that the computer timezone is the prayer-location timezone.
@@ -44,110 +153,39 @@ Prayer calculations are not mosque iqama schedules. Choose the method used by
 the closest relevant authority, compare the result with a trusted local
 calendar, and use the tuning fields when needed.
 
-## Minimal runtime footprint
+### Defaults
 
-There are no bundled frameworks, fonts, audio files, daemons, or package
-installers. Runtime dependencies are already part of Omarchy's base system:
+The initial profile uses:
 
-- Quickshell and the Omarchy shell UI components;
-- Bash, `curl`, `jq`, GNU `date`, `flock`, and coreutils;
-- `omarchy-notification-send` when notifications are enabled.
+- Cairo (`30.0444`, `31.2357`) and `Africa/Cairo`;
+- method 5, Egyptian General Authority of Survey;
+- standard/Shafi Asr and angle-based high-latitude adjustment;
+- 24-hour display and English labels;
+- the Horizon panel and strip/countdown bar chip;
+- notifications disabled.
 
-### Aether compatibility
+### Theme compatibility
 
-[Aether](https://github.com/bjarneo/aether) is supported without an adapter or
-runtime dependency. Aether generates a normal Omarchy v4 theme and activates it
-through Omarchy; the widget then receives the resulting `Color` and `Style`
-tokens from the running shell. Keeping this boundary means the same widget also
-works with built-in and hand-authored Omarchy themes.
+OmaPrayers consumes Omarchy's current `Color`, `Style`, spacing, typography,
+and corner-radius tokens. Built-in, hand-authored, and
+[Aether](https://github.com/bjarneo/aether)-generated Omarchy v4 themes work
+through the same native boundary without an adapter or runtime dependency.
 
-The cache lives under `$XDG_STATE_HOME` when it is set, otherwise under:
+### Verification
 
-```text
-~/.local/state/omarchy/prayer-times/salemsayed.prayer-times/
-```
+The current implementation has been exercised in a disposable KVM guest built
+from the Omarchy 4.0.0 RC2 ISO. Live checks covered both panel layouts, Arabic
+and English, 12/24-hour clocks, all four bar positions, rotated vertical
+labels, post-Isha rollover to tomorrow's Fajr, cache recovery, IPC, settings,
+notifications, Tokyo Night, and an Aether-generated light theme. Clean shell
+loads produced no plugin warnings or crashes.
 
-## Defaults
+The deterministic suite covers malformed providers, corrupt and stale caches,
+concurrent fetches, option boundaries, timezone and month rollover, layout
+geometry helpers, countdown localization, and notification boundaries. See
+[Testing](TESTING.md) for repeatable checks and the historical
+[VM report](docs/VM-TEST-REPORT.md) for its exact environment and qualification
+limits.
 
-The initial profile matches the current setup:
-
-- Cairo (`30.0444`, `31.2357`)
-- `Africa/Cairo`
-- method 5, Egyptian General Authority of Survey
-- standard/Shafi Asr
-- angle-based high-latitude adjustment
-- 24-hour display
-- Horizon panel layout
-- strip and countdown bar display
-- notifications disabled
-
-All values can be changed from the widget settings generated from
-`manifest.json`, or with `omarchy bar set`.
-
-## Install later on Omarchy
-
-Do not run these steps until the machine is booted into Omarchy Quattro.
-
-For the local development checkout:
-
-```bash
-omarchy plugin validate ~/Coding/omarchy-prayer-times
-omarchy plugin add file://$HOME/Coding/omarchy-prayer-times --enable
-omarchy bar move salemsayed.prayer-times --section right --index 0
-```
-
-Once the repository is published, use its HTTPS Git URL instead of the local
-`file://` URL.
-
-The plugin declares `right` as its default section, so the explicit move is
-optional.
-
-## Configuration examples
-
-Settings are inline on the bar entry, as required by Quattro. Examples:
-
-```bash
-omarchy bar set salemsayed.prayer-times barDisplay "Icon only"
-omarchy bar set salemsayed.prayer-times panelStyle "Compact"
-omarchy bar set salemsayed.prayer-times timeFormat "12-hour"
-omarchy bar set salemsayed.prayer-times notifications true --json
-omarchy bar set salemsayed.prayer-times notifyBeforeMinutes 15 --json
-omarchy bar set salemsayed.prayer-times hanafi true --json
-```
-
-Changing location should always update all three fields together:
-
-```bash
-omarchy bar set salemsayed.prayer-times locationLabel "Alexandria"
-omarchy bar set salemsayed.prayer-times latitude "31.2001"
-omarchy bar set salemsayed.prayer-times longitude "29.9187"
-omarchy bar set salemsayed.prayer-times timezone "Africa/Cairo"
-```
-
-See [Configuration](docs/CONFIGURATION.md) for every option.
-
-## Controls
-
-- Left or middle click: toggle the schedule panel.
-- Refresh: right-click the bar widget, or press `R` while the panel is open.
-- `Esc`: close the panel.
-- `Tab` / `Shift+Tab`: switch between adjacent Omarchy panels.
-
-The panel does not reserve a row for a permanent refresh instruction.
-
-## Verification
-
-Version 1.0.0 has been installed and exercised in a disposable KVM guest created
-from the Omarchy 4.0.0 RC2 ISO. This included real Quattro shell loading, live
-AlAdhan data, offline cache recovery, IPC, Arabic and 12-hour rendering,
-Shafi/Hanafi switching, notification delivery and deduplication, horizontal and
-vertical bar geometry, invalid-setting recovery, and native Tokyo Night and
-Aether-generated light themes. The deterministic suite adds malformed-provider,
-corrupt-cache, concurrent-fetch, option-boundary, timezone, rollover, and
-notification-boundary coverage. See [TESTING.md](TESTING.md) for the repeatable
-checks and [the VM report](docs/VM-TEST-REPORT.md) for scope and remaining
-hardware-only qualification.
-
-## License
-
-[MIT](LICENSE)
+The implementation and manifest validation were grounded against
+[`basecamp/omarchy` at `f0020448` on the `quattro` branch](https://github.com/basecamp/omarchy/blob/quattro/docs/omarchy-shell.md).

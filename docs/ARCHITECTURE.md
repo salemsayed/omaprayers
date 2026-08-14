@@ -2,9 +2,10 @@
 
 ## Omarchy shell layer
 
-`manifest.json` declares one third-party `bar-widget`. `BarWidget.qml` extends
-the official `BarWidget`, accepts the injected `bar`, `moduleName`, and
-`settings` properties, and hosts the detail panel. The popup uses
+`manifest.json` declares OmaPrayers as one third-party `bar-widget` with the
+permanent id `io.github.salemsayed.omaprayers`. `BarWidget.qml` extends the
+official `BarWidget`, accepts the injected `bar`, `moduleName`, and `settings`
+properties, and hosts the detail panel. The popup uses
 the same ownership and popout-switch contract as the Quattro clock and weather
 widgets.
 
@@ -35,7 +36,9 @@ The normalized cache stores:
   target-local midnight.
 
 State uses `$XDG_STATE_HOME` when set and otherwise follows the documented
-`~/.local/state` fallback. The directory is forced to mode `0700`; files are
+`~/.local/state` fallback. OmaPrayers keeps its files in
+`omarchy/io.github.salemsayed.omaprayers`. The directory is forced to mode
+`0700`; files are
 created under a `077` umask. Writes use a same-directory temporary file followed
 by `mv`, and failed publications clean up their staging files. A per-plugin
 `flock` ensures multiple monitors share one network refresh. Stale data is

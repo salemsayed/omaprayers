@@ -7,7 +7,7 @@ import "Model.js" as Model
 
 BarWidget {
   id: root
-  moduleName: "salemsayed.prayer-times"
+  moduleName: "io.github.salemsayed.omaprayers"
 
   readonly property var schedule: panelLoader.item ? panelLoader.item.schedule : null
   readonly property date nowTick: panelLoader.item ? panelLoader.item.nowTick : new Date()
@@ -16,6 +16,11 @@ BarWidget {
   readonly property int minutesToNext: Model.minutesUntil(nextPrayer, nowTick)
   readonly property string language: String(setting("language", "English"))
   readonly property bool isArabic: language === "Arabic"
+  readonly property string locationLabel: String(setting("locationLabel", "Cairo"))
+  readonly property string locationLabelAr: String(setting("locationLabelAr", ""))
+  readonly property string displayLocation: isArabic && locationLabelAr !== ""
+    ? locationLabelAr
+    : locationLabel
   readonly property string arabicFont: String(setting("arabicFont", "Noto Naskh Arabic"))
   readonly property string timeFormat: String(setting("timeFormat", "24-hour"))
   readonly property string barDisplay: String(setting("barDisplay", "Strip + countdown"))
@@ -27,7 +32,9 @@ BarWidget {
   readonly property bool unavailable: !schedule || schedule.ok !== true
   readonly property string displayText: Model.barText(nextPrayer, nowTick, language, barDisplay, timeFormat)
   readonly property bool iconOnly: displayText === "\ueed3"
-  readonly property string tooltipText: Model.tooltip(schedule, nextPrayer, nowTick, language, timeFormat)
+  readonly property string tooltipText: Model.tooltip(
+    schedule, nextPrayer, nowTick, language, timeFormat, displayLocation
+  )
   readonly property bool prayerSoon: isFinite(minutesToNext) && minutesToNext >= 0 && minutesToNext <= highlightBeforeMinutes
   readonly property bool stripModeActive: barDisplay === "Strip + countdown" && !root.vertical
   readonly property color chipForeground: prayerSoon

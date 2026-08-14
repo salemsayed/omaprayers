@@ -1,6 +1,6 @@
-# Omarchy Quattro VM test report
+# OmaPrayers VM test report
 
-Test date: 2026-08-14 (`Africa/Cairo`)
+Test dates: 2026-08-14 through 2026-08-15 (`Africa/Cairo`)
 
 ## Environment and isolation
 
@@ -14,9 +14,8 @@ Test date: 2026-08-14 (`Africa/Cairo`)
 - Direct QEMU/KVM boot with OVMF, 8 vCPUs, 6144 MiB RAM, and a throwaway
   QCOW2 overlay. No host block device or Omarchy physical partition was
   attached. SSH was forwarded only to `127.0.0.1:2222`.
-- The installed system reported kernel `7.1.8-arch1-3` and Omarchy
-  `4.0.0.alpha`. The latter does not match the RC2 ISO filename and is recorded
-  here rather than hidden.
+- The installed system reported kernel `7.1.8-arch1-3`. The final qualification
+  pass reported Omarchy package version `4.0.0rc2-1`.
 
 The official Omarchy Quattro contributor guidance points graphical acceptance
 work to the sibling ISO harness. That flow completed the installer and produced
@@ -31,13 +30,15 @@ the reusable base image used by the isolated overlay.
   branch at `f0020448ca87329199de7cb12f2015ebc4a3e5e7`.
 - A local Git source installed through the real
   `omarchy plugin add file://... --enable --yes` path.
-- The final committed 1.0.0 tree completed a remove/re-add/enable/move cycle.
-  Removal retained the cache by design, the reinstalled manifest reported
-  1.0.0, and a clean shell restart returned IPC status with zero plugin QML
-  errors in the new journal window.
+- A Git snapshot of the exact 2.0.0 release candidate completed a clean
+  remove/add/enable/move cycle under `io.github.salemsayed.omaprayers`. The
+  installed manifest reported `OmaPrayers` and created only the new scoped
+  state directory.
 - Plugin discovery, right-bar placement, IPC `open`, and IPC `status` passed.
 - A clean `omarchy-restart-shell` load produced no plugin QML warning, syntax
-  error, or reference error.
+  error, loader error, or reference error. Live bar relocation can briefly
+  overlap old and new widget instances and emit Quickshell's duplicate-handler
+  warning; IPC remained functional and a clean restart cleared it.
 - The first live load exposed a nullable QML binding in the tomorrow label.
   The binding and adjacent row guards were fixed and the clean-load check was
   repeated.
@@ -86,13 +87,14 @@ Sources: [Egyptian General Survey Authority prayer times](https://www.esa.gov.eg
 
 ### Presentation and Aether
 
-- The full panel rendered without clipping in the 1280x800 horizontal desktop.
-- English/12-hour and Arabic/12-hour views rendered. Arabic night rows use a
-  fixed gutter and baseline-aligned label/time columns. Arabic mode mirrors the
+- Both Horizon and Compact rendered without clipping in the 1280x800 desktop.
+  English/12-hour and Arabic/12-hour views rendered. Arabic mode mirrors the
   full panel hierarchy with labels on the right and clocks on the left, while
   the English regression retains labels on the left and clocks on the right.
-  The corrected layout was inspected at both default text size and Omarchy text
-  size 20.
+  The bar, tooltip, IPC status, panel status, and notification copy use Arabic
+  countdown units when Arabic mode is selected.
+- Compact Arabic was inspected at Omarchy text size 20 and remained within the
+  shell's scaled panel bounds with its footer visible.
 - At text size 20 the panel stayed clipped to its card, accepted an injected
   mouse-wheel scroll, and revealed the initially hidden footer without painting
   onto the desktop.
@@ -101,12 +103,14 @@ Sources: [Egyptian General Survey Authority prayer times](https://www.esa.gov.eg
   then restored and reported synchronized.
 - A forced live refresh stored and displayed AlAdhan's Arabic Hijri month while
   retaining the English fallback for older caches.
-- Tokyo Night and an Aether 4.28.0 generated light theme were inspected.
+- Tokyo Night and an Aether 4.28.0 generated light theme were inspected with
+  both redesigned panel styles.
 - Aether applied its normal Omarchy v4 `colors.toml`; the open widget updated
   through native `Color` and `Style` tokens without Aether-specific code or a
   plugin restart.
-- The bar was moved from top to left with the widget in icon-only mode and the
-  optional rows hidden. The panel re-anchored and remained fully visible.
+- The bar was moved across top, left, right, and bottom. The strip/countdown
+  chip fell back to a rotated text label on both vertical edges, and the panel
+  re-anchored fully on every edge.
 - An invalid latitude cleared the prior schedule and rendered an explicit
   error panel. Restoring the value recovered the cached schedule.
 - A real notification sent through `omarchy-notification-send` rendered in the

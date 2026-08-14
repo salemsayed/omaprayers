@@ -13,7 +13,7 @@ body="${3:-}"
 [[ -n $event_key ]] || exit 1
 
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
-state_dir="$state_home/omarchy/prayer-times/salemsayed.prayer-times"
+state_dir="$state_home/omarchy/io.github.salemsayed.omaprayers"
 last_event_file="$state_dir/last-notification"
 lock_file="$state_dir/notification.lock"
 mkdir -p "$state_dir" || exit 1

@@ -44,11 +44,29 @@ Column {
     return firstSegment !== null && segment.end <= cycleMinutes
   }
 
-  function nightLabelText(name, includeClock) {
-    var result = Model.label(name, host.language)
-    if (!includeClock) return result
-    var value = Model.timing(host.todayDay, name)
-    return value ? result + " " + Model.formatClock(value.time, host.timeFormat) : result
+  component NightLabel: Row {
+    required property string markerName
+    required property bool includeClock
+    readonly property var markerTiming: Model.timing(horizonRoot.host.todayDay, markerName)
+
+    spacing: Style.space(4)
+
+    Text {
+      text: Model.label(parent.markerName, horizonRoot.host.language)
+      color: horizonRoot.host.faint
+      font.family: horizonRoot.host.nameFontFamily
+      font.pixelSize: Style.font.caption
+    }
+
+    Text {
+      visible: parent.includeClock && parent.markerTiming !== null
+      text: parent.markerTiming
+        ? Model.formatClock(parent.markerTiming.time, horizonRoot.host.timeFormat)
+        : ""
+      color: horizonRoot.host.faint
+      font.family: horizonRoot.host.fontFamily
+      font.pixelSize: Style.font.caption
+    }
   }
 
   Item {
@@ -89,7 +107,7 @@ Column {
             parent.width - heroClock.implicitWidth - parent.spacing)
           text: host.nextPrayer
             ? Model.label(host.nextPrayer.name, host.language)
-            : (host.isArabic ? "مواقيت الصلاة" : "Prayer Times")
+            : (host.isArabic ? "مواقيت الصلاة" : "OmaPrayers")
           color: host.foreground
           font.family: host.nameFontFamily
           font.pixelSize: Style.font.title
@@ -325,8 +343,9 @@ Column {
             id: tableName
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(implicitWidth,
-              parent.width - (imsakText.visible ? imsakText.implicitWidth + Style.space(5) : 0))
+            width: Math.min(implicitWidth, parent.width - (imsakName.visible
+              ? imsakName.implicitWidth + imsakClock.implicitWidth + Style.space(8)
+              : 0))
             text: Model.label(tableRow.modelData.name, host.language)
             color: tableRow.tone
             font.family: host.nameFontFamily
@@ -336,21 +355,30 @@ Column {
           }
 
           Text {
-            id: imsakText
+            id: imsakName
             visible: tableRow.imsakTiming !== null
             anchors.left: tableName.right
             anchors.leftMargin: Style.space(5)
             anchors.baseline: tableName.baseline
-            text: {
-              if (!tableRow.imsakTiming) return ""
-              var prefix = host.isArabic ? "إمساك" : "imsak"
-              return prefix + " "
-                + Model.formatClock(tableRow.imsakTiming.time, host.timeFormat)
-            }
+            text: host.isArabic ? "إمساك" : "imsak"
             color: host.faint
             font.family: host.nameFontFamily
             font.pixelSize: Style.font.caption
             elide: Text.ElideRight
+          }
+
+          Text {
+            id: imsakClock
+            visible: tableRow.imsakTiming !== null
+            anchors.left: imsakName.right
+            anchors.leftMargin: Style.space(3)
+            anchors.baseline: tableName.baseline
+            text: tableRow.imsakTiming
+              ? Model.formatClock(tableRow.imsakTiming.time, host.timeFormat)
+              : ""
+            color: host.faint
+            font.family: host.fontFamily
+            font.pixelSize: Style.font.caption
           }
         }
 
@@ -481,42 +509,34 @@ Column {
       width: parent.width
       spacing: 0
 
-      Text {
+      NightLabel {
         id: maghribLabel
-        text: horizonRoot.nightLabelText("Maghrib", false)
-        color: host.faint
-        font.family: host.nameFontFamily
-        font.pixelSize: Style.font.caption
+        markerName: "Maghrib"
+        includeClock: false
       }
 
       Item { width: nightLabels.fillerWidth; height: 1 }
 
-      Text {
+      NightLabel {
         id: firstThirdLabel
-        text: horizonRoot.nightLabelText("Firstthird", true)
-        color: host.faint
-        font.family: host.nameFontFamily
-        font.pixelSize: Style.font.caption
+        markerName: "Firstthird"
+        includeClock: true
       }
 
       Item { width: nightLabels.fillerWidth; height: 1 }
 
-      Text {
+      NightLabel {
         id: lastThirdLabel
-        text: horizonRoot.nightLabelText("Lastthird", true)
-        color: host.faint
-        font.family: host.nameFontFamily
-        font.pixelSize: Style.font.caption
+        markerName: "Lastthird"
+        includeClock: true
       }
 
       Item { width: nightLabels.fillerWidth; height: 1 }
 
-      Text {
+      NightLabel {
         id: fajrLabel
-        text: horizonRoot.nightLabelText("Fajr", false)
-        color: host.faint
-        font.family: host.nameFontFamily
-        font.pixelSize: Style.font.caption
+        markerName: "Fajr"
+        includeClock: false
       }
     }
   }
