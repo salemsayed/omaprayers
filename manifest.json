@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "salemsayed.prayer-times",
   "name": "Prayer Times",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "Salem Sayed",
   "license": "MIT",
   "description": "Accurate, timezone-safe prayer times with a compact native Omarchy panel",

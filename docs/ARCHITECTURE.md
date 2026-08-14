@@ -29,10 +29,14 @@ The normalized cache stores:
 - cache freshness, fetch time, target-local today/tomorrow, and the next
   target-local midnight.
 
-Writes use a same-directory temporary file followed by `mv`. A per-plugin
+State uses `$XDG_STATE_HOME` when set and otherwise follows the documented
+`~/.local/state` fallback. The directory is forced to mode `0700`; files are
+created under a `077` umask. Writes use a same-directory temporary file followed
+by `mv`, and failed publications clean up their staging files. A per-plugin
 `flock` ensures multiple monitors share one network refresh. Stale data is
-served only when its configuration fingerprint matches and it contains both
-the target-local current day and tomorrow.
+served only when its configuration fingerprint matches, it contains both the
+target-local current day and tomorrow, and all mandatory timestamps for those
+days are complete ISO-8601 instants.
 
 ## Time model
 
@@ -49,7 +53,9 @@ The 30-second tick compares the previous and current epoch, so a suspend or
 delayed timer can still detect a crossed prayer. A configurable grace window
 prevents hours-old notifications. `prayer-notify.sh` serializes notifications,
 persists the last event key, and invokes `omarchy-notification-send` exactly
-once across monitors.
+once across monitors. The key is committed only after successful desktop
+delivery. The panel performs two bounded retries for transient failures and
+then exposes a warning instead of retrying forever.
 
 ## Deliberate omissions
 

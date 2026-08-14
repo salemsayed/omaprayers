@@ -13,8 +13,8 @@ This repository targets the official Omarchy `quattro` plugin contract:
 - installation through `omarchy plugin add` and placement through
   `omarchy plugin enable` / `omarchy bar move`.
 
-The implementation was grounded against
-[`basecamp/omarchy` at `1fe471dc` on the `quattro` branch](https://github.com/basecamp/omarchy/blob/quattro/docs/omarchy-shell.md).
+The implementation and final manifest validation were grounded against
+[`basecamp/omarchy` at `f0020448` on the `quattro` branch](https://github.com/basecamp/omarchy/blob/quattro/docs/omarchy-shell.md).
 
 ## Accuracy and resilience
 
@@ -27,11 +27,14 @@ The implementation was grounded against
 - Retains a matching cache when offline and clearly marks it stale.
 - Serializes refreshes across multiple monitors and applies bounded network
   retries.
+- Validates matching caches before use and rejects malformed, short, or
+  incomplete provider responses rather than presenting partial schedules.
 - Supports calculation method, Shafi/Hanafi Asr, high-latitude rule, midnight
   mode, Shafaq, Hijri adjustment, custom method parameters, and all nine
   AlAdhan tuning offsets.
 - Notifications use Omarchy's native notification helper and are deduplicated
-  across monitors and shell reloads.
+  across monitors and shell reloads. Transient delivery failures receive two
+  bounded retries and surface a warning if all attempts fail.
 
 Prayer calculations are not mosque iqama schedules. Choose the method used by
 the closest relevant authority, compare the result with a trusted local
@@ -54,7 +57,7 @@ through Omarchy; the widget then receives the resulting `Color` and `Style`
 tokens from the running shell. Keeping this boundary means the same widget also
 works with built-in and hand-authored Omarchy themes.
 
-The cache lives under:
+The cache lives under `$XDG_STATE_HOME` when it is set, otherwise under:
 
 ```text
 ~/.local/state/omarchy/prayer-times/salemsayed.prayer-times/
@@ -126,11 +129,14 @@ See [Configuration](docs/CONFIGURATION.md) for every option.
 
 ## Verification
 
-The plugin has been installed and exercised in a disposable KVM guest created
+Version 1.0.0 has been installed and exercised in a disposable KVM guest created
 from the Omarchy 4.0.0 RC2 ISO. This included real Quattro shell loading, live
 AlAdhan data, offline cache recovery, IPC, Arabic and 12-hour rendering,
-Shafi/Hanafi switching, notification deduplication, and native Tokyo Night and
-Aether-generated light themes. See [TESTING.md](TESTING.md) for the repeatable
+Shafi/Hanafi switching, notification delivery and deduplication, horizontal and
+vertical bar geometry, invalid-setting recovery, and native Tokyo Night and
+Aether-generated light themes. The deterministic suite adds malformed-provider,
+corrupt-cache, concurrent-fetch, option-boundary, timezone, rollover, and
+notification-boundary coverage. See [TESTING.md](TESTING.md) for the repeatable
 checks and [the VM report](docs/VM-TEST-REPORT.md) for scope and remaining
 hardware-only qualification.
 

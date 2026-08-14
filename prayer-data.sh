@@ -61,20 +61,24 @@ jq -en --arg value "$longitude" '
   | $number != null and $number >= -180 and $number <= 180
 ' >/dev/null || fail "longitude must be between -180 and 180"
 
-[[ $timezone =~ ^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)+$ ]] \
+[[ $timezone =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*(/[A-Za-z0-9._+-]+)*$ ]] \
   && [[ $timezone != *".."* ]] \
   && [[ -f "/usr/share/zoneinfo/$timezone" ]] \
   || fail "timezone must be a valid IANA timezone installed under /usr/share/zoneinfo"
 
-[[ $method =~ ^[0-9]+$ ]] && (( method >= 0 && method <= 99 )) \
-  || fail "method must be an integer from 0 to 99"
+if [[ ! $method =~ ^[0-9]+$ ]] || (( method < 0 || method > 99 )); then
+  fail "method must be an integer from 0 to 99"
+fi
 [[ $school == "0" || $school == "1" ]] || fail "school must be 0 or 1"
 [[ $latitude_adjustment =~ ^[123]$ ]] || fail "latitude adjustment must be 1, 2, or 3"
 [[ $midnight_mode == "0" || $midnight_mode == "1" ]] || fail "midnight mode must be 0 or 1"
-[[ $hijri_adjustment =~ ^-?[0-9]+$ ]] && (( hijri_adjustment >= -2 && hijri_adjustment <= 2 )) \
-  || fail "Hijri adjustment must be between -2 and 2"
-[[ $refresh_hours =~ ^[0-9]+$ ]] && (( refresh_hours >= 1 && refresh_hours <= 168 )) \
-  || fail "refresh interval must be between 1 and 168 hours"
+if [[ ! $hijri_adjustment =~ ^-?[0-9]+$ ]] \
+    || (( hijri_adjustment < -2 || hijri_adjustment > 2 )); then
+  fail "Hijri adjustment must be between -2 and 2"
+fi
+if [[ ! $refresh_hours =~ ^[0-9]+$ ]] || (( refresh_hours < 1 || refresh_hours > 168 )); then
+  fail "refresh interval must be between 1 and 168 hours"
+fi
 [[ $shafaq == "general" || $shafaq == "ahmer" || $shafaq == "abyad" ]] \
   || fail "shafaq must be general, ahmer, or abyad"
 
@@ -84,6 +88,12 @@ jq -en --arg value "$tune" '
     and all($parts[]; test("^-?[0-9]+$") and ((tonumber) >= -60 and (tonumber) <= 60))
 ' >/dev/null || fail "tune must contain nine comma-separated minute offsets between -60 and 60"
 
+if [[ $method == "99" && -z $method_settings ]]; then
+  fail "method 99 requires custom method settings"
+fi
+if [[ $method != "99" && -n $method_settings ]]; then
+  fail "custom method settings require method 99"
+fi
 if [[ -n $method_settings ]]; then
   jq -en --arg value "$method_settings" '
     ($value | split(",")) as $parts
@@ -92,10 +102,12 @@ if [[ -n $method_settings ]]; then
   ' >/dev/null || fail "custom method settings must contain three comma-separated numbers or null values"
 fi
 
-state_dir="$HOME/.local/state/omarchy/prayer-times/salemsayed.prayer-times"
+state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
+state_dir="$state_home/omarchy/prayer-times/salemsayed.prayer-times"
 current_file="$state_dir/current.json"
 lock_file="$state_dir/fetch.lock"
-mkdir -p "$state_dir"
+mkdir -p "$state_dir" || fail "could not create prayer state directory"
+chmod 700 "$state_dir" || fail "could not secure prayer state directory"
 
 config_json=$(jq -cn \
   --arg locationLabel "${location_label:-Prayer location}" \
@@ -140,11 +152,19 @@ cache_has_window() {
     --arg fingerprint "$fingerprint" \
     --arg today "$today" \
     --arg tomorrow "$tomorrow" '
+      def mandatory_timings_are_valid:
+        all([.timings.Fajr.at, .timings.Dhuhr.at, .timings.Asr.at,
+             .timings.Maghrib.at, .timings.Isha.at][];
+          type == "string"
+          and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([+-][0-9]{2}:[0-9]{2}|Z)$"));
       .schemaVersion == 1
+      and .ok == true
       and .configFingerprint == $fingerprint
       and (.days | type == "array")
       and any(.days[]; .date == $today)
       and any(.days[]; .date == $tomorrow)
+      and all(.days[] | select(.date == $today or .date == $tomorrow);
+        mandatory_timings_are_valid)
     ' "$cache_file" >/dev/null 2>&1
 }
 
@@ -152,8 +172,14 @@ publish() {
   local source_file="$1"
   local output_file
   output_file=$(mktemp "$state_dir/.current.XXXXXX") || fail "could not create state file"
-  cp "$source_file" "$output_file" || fail "could not stage state file"
-  mv "$output_file" "$current_file" || fail "could not publish state file"
+  cp "$source_file" "$output_file" || {
+    rm -f -- "$output_file"
+    fail "could not stage state file"
+  }
+  mv "$output_file" "$current_file" || {
+    rm -f -- "$output_file"
+    fail "could not publish state file"
+  }
   cat "$current_file"
 }
 
@@ -228,7 +254,7 @@ fetch_month() {
   fi
   "${args[@]}" >"$destination"
   jq -e '.code == 200 and (.data | type == "array") and (.data | length) >= 28' \
-    "$destination" >/dev/null
+    "$destination" >/dev/null 2>&1
 }
 
 year=${today%%-*}
@@ -342,6 +368,12 @@ jq -e \
   }
 
 cache_stage=$(mktemp "$state_dir/.cache.XXXXXX") || fail "could not stage prayer cache"
-cp "$normalized_file" "$cache_stage" || fail "could not copy prayer cache"
-mv "$cache_stage" "$cache_file" || fail "could not publish prayer cache"
+cp "$normalized_file" "$cache_stage" || {
+  rm -f -- "$cache_stage"
+  fail "could not copy prayer cache"
+}
+mv "$cache_stage" "$cache_file" || {
+  rm -f -- "$cache_stage"
+  fail "could not publish prayer cache"
+}
 publish "$cache_file"

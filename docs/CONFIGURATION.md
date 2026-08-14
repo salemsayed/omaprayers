@@ -20,6 +20,10 @@ Omarchy Quattro stores widget settings directly on the widget's entry in
 | `tune` | nine zeroes | Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight offsets |
 | `customMethodSettings` | empty | Method 99 values: Fajr angle, Maghrib angle/minutes, Isha angle/minutes |
 
+Method 99 requires exactly three comma-separated custom values. Conversely,
+custom values are rejected for every non-99 method so a setting cannot appear
+active while being omitted from the provider request.
+
 AlAdhan recommends choosing the calculation authority closest to the location.
 Method 5 is the Egyptian General Authority of Survey. Current method details
 are available from the [AlAdhan calculation-method documentation](https://aladhan.com/calculation-methods)
@@ -52,7 +56,9 @@ and require no plugin-specific integration.
 | `notificationGraceMinutes` | `10` | Deliver a recently crossed event after resume, within this window |
 
 The at-prayer notification is always included when notifications are enabled.
-An advance notification is never emitted after the actual prayer time.
+An advance notification is never emitted after the actual prayer time. A
+failed desktop delivery receives two retries at five-second intervals; the
+panel shows a warning if all three attempts fail.
 
 ## Direct shell.json example
 

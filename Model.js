@@ -31,7 +31,7 @@ var ENGLISH_NAMES = {
 function parseEnvelope(raw) {
   try {
     var value = JSON.parse(String(raw || "{}"))
-    return value && typeof value === "object" ? value : null
+    return value && typeof value === "object" && !(value instanceof Array) ? value : null
   } catch (e) {
     return null
   }
@@ -237,7 +237,8 @@ function notificationEvents(schedule, previousEpoch, currentEpoch, beforeMinutes
           name: events[i].name,
           kind: "before",
           minutes: before,
-          time: events[i].time
+          time: events[i].time,
+          triggerEpoch: reminderAt
         })
       }
     }
@@ -247,7 +248,8 @@ function notificationEvents(schedule, previousEpoch, currentEpoch, beforeMinutes
         name: events[i].name,
         kind: "at",
         minutes: 0,
-        time: events[i].time
+        time: events[i].time,
+        triggerEpoch: prayerAt
       })
     }
   }

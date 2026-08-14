@@ -27,8 +27,14 @@ the reusable base image used by the isolated overlay.
 ### Plugin contract and loading
 
 - `omarchy plugin validate` passed.
+- The final release tree also passed the validator from the official Quattro
+  branch at `f0020448ca87329199de7cb12f2015ebc4a3e5e7`.
 - A local Git source installed through the real
   `omarchy plugin add file://... --enable --yes` path.
+- The final committed 1.0.0 tree completed a remove/re-add/enable/move cycle.
+  Removal retained the cache by design, the reinstalled manifest reported
+  1.0.0, and a clean shell restart returned IPC status with zero plugin QML
+  errors in the new journal window.
 - Plugin discovery, right-bar placement, IPC `open`, and IPC `status` passed.
 - A clean `omarchy-restart-shell` load produced no plugin QML warning, syntax
   error, or reference error.
@@ -51,6 +57,11 @@ the reusable base image used by the isolated overlay.
 - Notification event boundaries passed the JavaScript tests. The notification
   helper emitted the first event once, suppressed a duplicate, did not commit
   a failed delivery, and allowed that event to be retried successfully.
+- Generated provider fixtures additionally covered short calendars, malformed
+  JSON, missing mandatory timings, a corrupt matching cache, single-component
+  `UTC`, all setting boundary failures, and two simultaneous refreshers. Both
+  refreshers completed while issuing exactly one two-month request pair.
+- State directory and file modes were verified as `0700` and `0600`.
 
 ### Cairo authority spot check
 
@@ -82,6 +93,12 @@ Sources: [Egyptian General Survey Authority prayer times](https://www.esa.gov.eg
 - Aether applied its normal Omarchy v4 `colors.toml`; the open widget updated
   through native `Color` and `Style` tokens without Aether-specific code or a
   plugin restart.
+- The bar was moved from top to left with the widget in icon-only mode and the
+  optional rows hidden. The panel re-anchored and remained fully visible.
+- An invalid latitude cleared the prior schedule and rendered an explicit
+  error panel. Restoring the value recovered the cached schedule.
+- A real notification sent through `omarchy-notification-send` rendered in the
+  native Omarchy notification surface.
 
 Local visual artifacts are deliberately ignored with the rest of the
 disposable VM state:
@@ -90,15 +107,19 @@ disposable VM state:
 - `.vm/plugin-panel-aether-light.png`
 - `.vm/plugin-panel-aether-arabic.png`
 - `.vm/plugin-panel-final.png`
+- `.vm/prod-panel-default.png`
+- `.vm/prod-panel-vertical-compact.png`
+- `.vm/prod-panel-invalid-config.png`
+- `.vm/prod-notification.png`
 
 ## Remaining qualification
 
 The following need the physical Omarchy session or a purpose-built simulated
 clock and are not claimed by this VM run:
 
-- vertical bar and multi-monitor geometry;
+- multi-monitor geometry;
 - non-default shell font/spacing scale extremes;
 - suspend/resume notification delivery through the real notification UI;
-- December 31 and month-end clock simulation;
+- December 31 and month-end visual clock simulation;
 - long-running API availability and comparison against the user's local mosque
   or chosen authority for their actual location.

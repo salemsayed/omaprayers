@@ -23,10 +23,14 @@ Panel {
   property bool refreshAfterCurrentFetch: false
   property bool forceAfterCurrentFetch: false
   property var notificationQueue: []
+  property var activeNotification: null
+  property int notificationRetryAttempt: 0
+  property string notificationWarning: ""
 
   readonly property string dataScript: Model.filePath(Qt.resolvedUrl("prayer-data.sh"))
   readonly property string notificationScript: Model.filePath(Qt.resolvedUrl("prayer-notify.sh"))
-  readonly property string cachePath: Quickshell.env("HOME") + "/.local/state/omarchy/prayer-times/salemsayed.prayer-times/current.json"
+  readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
+  readonly property string cachePath: stateHome + "/omarchy/prayer-times/salemsayed.prayer-times/current.json"
 
   readonly property string locationLabel: String(setting("locationLabel", "Cairo"))
   readonly property string latitude: String(setting("latitude", "30.0444"))
@@ -92,6 +96,7 @@ Panel {
     if (lastError !== "") return lastError
     if (stale && schedule.error) return "Offline cache \u00b7 " + schedule.error
     if (fetching && !schedule) return "Loading prayer calendar..."
+    if (notificationWarning !== "") return notificationWarning
     return ""
   }
 
@@ -207,12 +212,31 @@ Panel {
   function startNotification() {
     if (notificationProcess.running || notificationQueue.length === 0) return
     var event = notificationQueue[0]
+    activeNotification = event
     var message = Model.notificationText(event, language, timeFormat)
     notificationProcess.command = [notificationScript, event.key, message.title, message.body]
     notificationProcess.running = true
   }
 
-  function finishNotification() {
+  function finishNotification(exitCode) {
+    if (exitCode === 0) {
+      notificationWarning = ""
+      notificationRetryAttempt = 0
+      activeNotification = null
+      if (notificationQueue.length > 0) notificationQueue = notificationQueue.slice(1)
+      Qt.callLater(startNotification)
+      return
+    }
+
+    if (notificationRetryAttempt < 2 && activeNotification) {
+      notificationRetryAttempt++
+      notificationRetry.restart()
+      return
+    }
+
+    notificationWarning = "Prayer notification delivery failed"
+    notificationRetryAttempt = 0
+    activeNotification = null
     if (notificationQueue.length > 0) notificationQueue = notificationQueue.slice(1)
     Qt.callLater(startNotification)
   }
@@ -248,7 +272,13 @@ Panel {
 
   onNotificationsEnabledChanged: {
     previousTickEpoch = Date.now()
-    if (!notificationsEnabled) notificationQueue = []
+    if (!notificationsEnabled) {
+      notificationQueue = []
+      activeNotification = null
+      notificationRetryAttempt = 0
+      notificationWarning = ""
+      notificationRetry.stop()
+    }
   }
 
   Component.onCompleted: Qt.callLater(function() { root.refresh(false) })
@@ -282,7 +312,13 @@ Panel {
 
   Process {
     id: notificationProcess
-    onExited: root.finishNotification()
+    onExited: function(exitCode) { root.finishNotification(exitCode) }
+  }
+
+  Timer {
+    id: notificationRetry
+    interval: 5000
+    onTriggered: root.startNotification()
   }
 
   Timer {

@@ -10,9 +10,15 @@ coverage and qualification limits.
 ```bash
 cd ~/Coding/omarchy-prayer-times
 omarchy plugin validate .
-node tests/Model.test.js
-bash tests/Scripts.test.sh
+tests/run
+shellcheck prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh tests/run
 ```
+
+`tests/run` covers 19 JavaScript model scenarios plus option validation,
+generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
+malformed/short/incomplete responses, concurrent fetches, and notification
+deduplication and retry safety. The GitHub Actions workflow runs the same suite
+and ShellCheck on every push and pull request.
 
 ## 2. Install the local checkout
 
@@ -33,9 +39,10 @@ omarchy-shell salemsayed.prayer-times status
 journalctl --user -u omarchy-shell -n 200 --no-pager
 ```
 
-The horizontal bar, Tokyo Night, and an Aether-generated light theme are
-VM-qualified. Vertical bar layout, non-default font scaling, keyboard-only
-navigation, and multi-monitor behavior remain physical-session checks.
+Horizontal and vertical bars, Tokyo Night, an Aether-generated light theme,
+English/Arabic labels, 12/24-hour clocks, compact rows, invalid-setting UI, and
+keyboard refresh are VM-qualified. Non-default font scaling, multi-monitor
+geometry, and real suspend/resume remain physical-session checks.
 
 ## 4. Data qualification
 
@@ -54,16 +61,18 @@ display, Hijri adjustment, Arabic labels, and explicit timezone display.
 - Set the system timezone different from `Africa/Cairo`; countdowns must remain
   tied to Cairo instants.
 - Inspect after Isha; next prayer must use tomorrow's Fajr timestamp and time.
-- Exercise the last day of a month and December 31 using a fixture or temporary
-  clock isolation rather than changing the production clock.
+- Exercise December 31 visually with temporary clock isolation rather than
+  changing the production clock; the normal two-month fixture suite verifies
+  the same normalization path for the current month boundary.
 - Disconnect networking, force refresh, and confirm the matching cache remains
   visible with a stale warning and no five-second retry storm.
 - Change coordinates while offline and confirm old-location timings are not
   presented as the new location.
 - Suspend across a notification, then verify one notification within the grace
   window and none outside it.
-- With two monitors, confirm a forced refresh makes at most one pair of monthly
-  API requests and a prayer produces one notification.
+- The concurrency suite proves two simultaneous widget refreshes make only one
+  pair of monthly requests. Repeat the notification check on physical dual
+  monitors to qualify the compositor-specific path.
 
 ## 6. Cleanup / rollback
 
