@@ -61,10 +61,11 @@ jq -en --arg value "$longitude" '
   | $number != null and $number >= -180 and $number <= 180
 ' >/dev/null || fail "longitude must be between -180 and 180"
 
-[[ $timezone =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*(/[A-Za-z0-9._+-]+)*$ ]] \
-  && [[ $timezone != *".."* ]] \
-  && [[ -f "/usr/share/zoneinfo/$timezone" ]] \
-  || fail "timezone must be a valid IANA timezone installed under /usr/share/zoneinfo"
+if ! [[ $timezone =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*(/[A-Za-z0-9._+-]+)*$ ]] \
+  || [[ $timezone == *".."* ]] \
+  || [[ ! -f "/usr/share/zoneinfo/$timezone" ]]; then
+  fail "timezone must be a valid IANA timezone installed under /usr/share/zoneinfo"
+fi
 
 if [[ ! $method =~ ^[0-9]+$ ]] || (( method < 0 || method > 99 )); then
   fail "method must be an integer from 0 to 99"
