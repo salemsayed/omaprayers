@@ -27,13 +27,30 @@ English presentation, offline caching, and optional notifications.
 - Optional prayer-time and advance notifications are deduplicated across
   monitors and shell reloads.
 
+- Presentation settings are changed from the panel itself. The footer carries a
+  layout switch, a bar-label switch, and a gear that unfolds the full display
+  section; each choice is written straight back to the bar entry in
+  `shell.json`.
+
 Controls:
 
-- Left or middle click toggles the panel.
+- Left click toggles the panel.
+- Middle click cycles the bar label through its five forms.
 - Right-click the bar widget, or press `R` while the panel is open, to force an
   online refresh.
 - `Esc` closes the panel.
 - `Tab` / `Shift+Tab` switches between adjacent Omarchy panels.
+
+With the panel open, these keys change the display without reaching for the
+mouse:
+
+| Key | Effect |
+|---|---|
+| `D` | Show or hide the display section |
+| `S` | Switch the panel layout |
+| `B` | Cycle the bar label |
+| `T` | Switch 24-hour and 12-hour |
+| `A` | Switch English and Arabic |
 
 ## Requirements
 
@@ -72,6 +89,13 @@ omarchy plugin add file://$HOME/Coding/omaprayers --enable
 repository.
 
 ## Configure
+
+The display settings — panel layout, bar label, clock format, language, the
+sunrise and night-marker rows, notifications, and the accent lead time — are
+reachable from the panel's gear button, and every change lands in the same bar
+entry the commands below write. Location, calculation method, and tuning stay
+configuration-only: those invalidate the cached calendar and force a fetch, so
+they are deliberately not a click away.
 
 Settings are stored inline on the bar entry, as required by Quattro. Examples:
 

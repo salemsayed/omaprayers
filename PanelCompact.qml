@@ -393,12 +393,7 @@ Column {
     color: Util.alpha(host.foreground, 0.16)
   }
 
-  Text {
-    width: parent.width
-    text: host.footerText
-    color: host.faint
-    font.family: host.fontFamily
-    font.pixelSize: Style.font.caption
-    wrapMode: Text.WordWrap
+  PanelDisplay {
+    host: compactRoot.host
   }
 }

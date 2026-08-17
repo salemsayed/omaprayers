@@ -58,6 +58,12 @@ BarWidget {
     if (panelLoader.item && panelLoader.item.refresh) panelLoader.item.refresh(force === true)
   }
 
+  // Delegated rather than written here so the panel stays the only writer of
+  // shell.json; it pushes the new entry back into root.settings on the way.
+  function cycleBarDisplay() {
+    if (panelLoader.item && panelLoader.item.cycleBarDisplay) panelLoader.item.cycleBarDisplay()
+  }
+
   function open() {
     if (panelLoader.item && panelLoader.item.openFromHotkey) panelLoader.item.openFromHotkey()
   }
@@ -130,6 +136,7 @@ BarWidget {
 
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton) root.refresh(true)
+      else if (buttonCode === Qt.MiddleButton) root.cycleBarDisplay()
       else root.togglePanel()
     }
 

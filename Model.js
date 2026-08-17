@@ -28,6 +28,52 @@ var ENGLISH_NAMES = {
   Lastthird: "Last third"
 }
 
+// Option rings for the settings the panel lets the user change in place. Each
+// one mirrors the enum in manifest.json, and the order is the click order of
+// the panel's cycle buttons.
+var PANEL_STYLES = ["Horizon", "Compact"]
+var TIME_FORMATS = ["24-hour", "12-hour"]
+var LANGUAGES = ["English", "Arabic"]
+var BAR_DISPLAYS = [
+  "Strip + countdown", "Icon only", "Name + countdown", "Name + time",
+  "Countdown only"
+]
+
+// English then Arabic for every string the display section paints. The panel
+// is bilingual everywhere else, so its own controls follow `language` too
+// rather than staying English inside an otherwise Arabic panel.
+var UI_LABELS = {
+  display: ["Display", "العرض"],
+  layout: ["Layout", "التصميم"],
+  clock: ["Clock", "الساعة"],
+  names: ["Names", "الأسماء"],
+  barLabel: ["Bar label", "شريط النظام"],
+  sunrise: ["Sunrise row", "صف الشروق"],
+  nightMarkers: ["Night markers", "علامات الليل"],
+  notifications: ["Notifications", "التنبيهات"],
+  accentLead: ["Accent lead", "التلوين المسبق"],
+  minutes: ["min", "دقيقة"],
+  off: ["Off", "معطل"],
+  settingsTip: ["Display settings", "إعدادات العرض"],
+  nextTip: ["Switch to", "تحويل إلى"]
+}
+
+// Short forms of the enum values. The bar-display names are abbreviated
+// because they ride a 150px control rather than the manifest's settings form.
+var OPTION_LABELS = {
+  Horizon: ["Horizon", "أفق"],
+  Compact: ["Compact", "مضغوط"],
+  "24-hour": ["24h", "24h"],
+  "12-hour": ["12h", "12h"],
+  English: ["English", "إنجليزي"],
+  Arabic: ["Arabic", "عربي"],
+  "Strip + countdown": ["Strip", "شريط"],
+  "Icon only": ["Icon", "أيقونة"],
+  "Name + countdown": ["Name + left", "الاسم والمتبقي"],
+  "Name + time": ["Name + time", "الاسم والوقت"],
+  "Countdown only": ["Countdown", "المتبقي"]
+}
+
 function parseEnvelope(raw) {
   try {
     var value = JSON.parse(String(raw || "{}"))
@@ -80,6 +126,39 @@ function sameConfig(actual, expected) {
 function label(name, language) {
   var names = text(language) === "Arabic" ? ARABIC_NAMES : ENGLISH_NAMES
   return names[name] || text(name)
+}
+
+function localized(table, key, language) {
+  var pair = table[text(key)]
+  if (!pair) return ""
+  return text(language) === "Arabic" ? pair[1] : pair[0]
+}
+
+function uiLabel(key, language) {
+  return localized(UI_LABELS, key, language)
+}
+
+// Falls back to the raw value so a hand-edited shell.json still names itself
+// in the panel instead of rendering an empty control.
+function optionLabel(value, language) {
+  return localized(OPTION_LABELS, value, language) || text(value)
+}
+
+// Builds the { value, label } list a Dropdown or ButtonGroup wants, with the
+// values kept as the canonical strings that go back into shell.json.
+function optionModel(ring, language) {
+  var out = []
+  for (var i = 0; i < ring.length; i++)
+    out.push({ value: ring[i], label: optionLabel(ring[i], language) })
+  return out
+}
+
+// A value outside the ring lands on the first option rather than nowhere, so a
+// typo in shell.json cannot strand a cycle button on a value it does not know.
+function nextInRing(ring, current) {
+  if (!(ring instanceof Array) || ring.length === 0) return ""
+  var index = ring.indexOf(text(current))
+  return index < 0 ? ring[0] : ring[(index + 1) % ring.length]
 }
 
 function dayForDate(schedule, dateKey) {
@@ -437,10 +516,18 @@ if (typeof module !== "undefined") {
     PRAYERS: PRAYERS,
     DAY_ORDER: DAY_ORDER,
     NIGHT_ORDER: NIGHT_ORDER,
+    PANEL_STYLES: PANEL_STYLES,
+    TIME_FORMATS: TIME_FORMATS,
+    LANGUAGES: LANGUAGES,
+    BAR_DISPLAYS: BAR_DISPLAYS,
     parseEnvelope: parseEnvelope,
     latinDigits: latinDigits,
     sameConfig: sameConfig,
     label: label,
+    uiLabel: uiLabel,
+    optionLabel: optionLabel,
+    optionModel: optionModel,
+    nextInRing: nextInRing,
     dayForDate: dayForDate,
     today: today,
     timing: timing,

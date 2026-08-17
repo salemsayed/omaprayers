@@ -343,4 +343,54 @@ test("tooltip appends the full calculation method from the prayer day", () => {
     "القاهرة · الظهر بعد 5 د (13:00) · نسخة محفوظة دون اتصال · Egyptian General Authority of Survey")
 })
 
+test("option rings cycle and wrap in the order the panel buttons follow", () => {
+  assert.equal(Model.nextInRing(Model.PANEL_STYLES, "Horizon"), "Compact")
+  assert.equal(Model.nextInRing(Model.PANEL_STYLES, "Compact"), "Horizon")
+  assert.equal(Model.nextInRing(Model.TIME_FORMATS, "24-hour"), "12-hour")
+  assert.equal(Model.nextInRing(Model.LANGUAGES, "Arabic"), "English")
+  assert.equal(Model.nextInRing(Model.BAR_DISPLAYS, "Strip + countdown"), "Icon only")
+  assert.equal(Model.nextInRing(Model.BAR_DISPLAYS, "Countdown only"), "Strip + countdown")
+})
+
+test("an unknown or empty current value cycles to the first option", () => {
+  assert.equal(Model.nextInRing(Model.PANEL_STYLES, "Nonsense"), "Horizon")
+  assert.equal(Model.nextInRing(Model.PANEL_STYLES, ""), "Horizon")
+  assert.equal(Model.nextInRing(Model.PANEL_STYLES, undefined), "Horizon")
+  assert.equal(Model.nextInRing([], "Horizon"), "")
+  assert.equal(Model.nextInRing(null, "Horizon"), "")
+})
+
+test("every ring value carries a label in both languages", () => {
+  const rings = [Model.PANEL_STYLES, Model.TIME_FORMATS, Model.LANGUAGES, Model.BAR_DISPLAYS]
+  for (const ring of rings) {
+    for (const value of ring) {
+      assert.notEqual(Model.optionLabel(value, "English"), "")
+      assert.notEqual(Model.optionLabel(value, "Arabic"), "")
+    }
+  }
+  assert.equal(Model.optionLabel("Horizon", "Arabic"), "أفق")
+  assert.equal(Model.optionLabel("Icon only", "English"), "Icon")
+})
+
+test("an unmapped option falls back to its raw value instead of an empty label", () => {
+  assert.equal(Model.optionLabel("Handwritten", "English"), "Handwritten")
+  assert.equal(Model.optionLabel("Handwritten", "Arabic"), "Handwritten")
+})
+
+test("optionModel pairs canonical values with localized labels", () => {
+  assert.deepEqual(Model.optionModel(Model.PANEL_STYLES, "English"), [
+    { value: "Horizon", label: "Horizon" },
+    { value: "Compact", label: "Compact" }
+  ])
+  const arabic = Model.optionModel(Model.TIME_FORMATS, "Arabic")
+  assert.deepEqual(arabic.map(entry => entry.value), Model.TIME_FORMATS)
+})
+
+test("display labels are translated and unknown keys stay empty", () => {
+  assert.equal(Model.uiLabel("display", "English"), "Display")
+  assert.equal(Model.uiLabel("display", "Arabic"), "العرض")
+  assert.equal(Model.uiLabel("notifications", "Arabic"), "التنبيهات")
+  assert.equal(Model.uiLabel("nothingHere", "English"), "")
+})
+
 console.log(`Model tests passed (${count} scenarios)`)

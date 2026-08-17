@@ -19,6 +19,28 @@ All colors, typography, spacing, corner radii, bar orientation, and panel
 placement come from the Omarchy shell. The Loader also passes inherited
 `LayoutMirroring` into either presentation layout.
 
+## Writing settings back
+
+`PanelDisplay.qml` is the footer and the display controls both layouts end with.
+Its controls are the shell's own `ButtonGroup`, `Dropdown`, `ToggleSwitch`, and
+`PanelSlider`, so the settings surface is themed by the same tokens as the rest
+of the panel.
+
+`Panel.persistSettings()` is the single writer. It merges the new values into a
+copy of the widget entry, assigns it to its own `settings` and to
+`hostWidget.settings`, then calls the host shell's `updateEntryInline`, which
+owns the `shell.json` write. The local assignment comes first so the panel
+repaints on the click rather than on the file round-trip, and the host widget is
+moved in step because it holds the copy that is pushed back down — a stale one
+would be written straight back out on the next change. With no writable entry
+the local half still applies, which makes an unplaced widget's controls a
+session preference instead of a dead click. `BarWidget.qml` delegates its
+middle-click to the panel rather than writing its own copy.
+
+The settable keys are exactly those absent from `Panel.configKey`, so a display
+change cannot invalidate the cache or start a fetch. Option rings, their
+bilingual labels, and the wrap-around cycle live in `Model.js` under test.
+
 ## Data layer
 
 `prayer-data.sh` validates every option before making a request. It asks

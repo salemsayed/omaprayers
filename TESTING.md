@@ -20,7 +20,7 @@ modules plus Quickshell's QML directory, allowing the `qs.Commons` and `qs.Ui`
 imports to resolve during linting. It is a developer convenience, not a
 repository dependency.
 
-`tests/run` covers 32 JavaScript model scenarios plus option validation,
+`tests/run` covers 38 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
 deduplication and retry safety. There is no CI runner; run `tests/run` locally
@@ -55,6 +55,20 @@ The VM check list includes:
 - 12/24-hour clocks, invalid-setting UI, keyboard refresh, and clipped
   scrolling at Omarchy text size 20;
 - Tokyo Night and an Aether-generated light theme.
+
+The display controls add these checks:
+
+- each footer button and each control in the display section writes its key to
+  the bar entry in `shell.json` and leaves every other key untouched;
+- the `D`, `S`, `B`, `T`, and `A` keys match their equivalent controls;
+- the section renders and mirrors correctly in Arabic, in both layouts;
+- the bar-label dropdown's popup suspends the panel's own key handling while it
+  is open;
+- one slider drag produces one write, not one per step;
+- a widget that is installed but not on the bar accepts a change for the session
+  without a write;
+- with the section open the panel reaches its height cap and scrolls rather than
+  clipping the last row.
 
 Multi-monitor geometry and real suspend/resume remain physical-session checks.
 

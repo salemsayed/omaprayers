@@ -43,6 +43,20 @@ and its `/v1/methods` endpoint.
 | `showNightMarkers` | `true` | Show Imsak, midnight, first third, and last third |
 | `highlightBeforeMinutes` | `15` | Apply the Omarchy accent color as the next prayer approaches |
 
+Every setting in this table except `arabicFont` is also settable from the panel:
+the footer holds a layout switch, a bar-label switch, and a gear that unfolds
+the display section, and the keys `D`, `S`, `B`, `T`, and `A` reach the same
+values. A change is applied locally on the click and written back to the
+widget's entry through the shell, so the panel and `shell.json` never disagree.
+
+None of these keys take part in the cache's configuration key, which is why
+they are safe to change from the panel: the schedule is repainted rather than
+discarded. The location and calculation settings above do invalidate the cache
+and trigger a fetch, so they stay configuration-only.
+
+When the widget has no writable entry — it is installed but not placed on the
+bar — a panel change still applies for the session and is simply not persisted.
+
 The plugin contains no bundled palette or font files. It consumes the current
 Omarchy bar colors, `Color.accent`, `Style.font.*`, `Style.spacing.*`, and
 `Style.cornerRadius`; its panel bounds are also passed through Omarchy's scaled

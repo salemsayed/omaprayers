@@ -26,6 +26,10 @@ Panel {
   property var activeNotification: null
   property int notificationRetryAttempt: 0
   property string notificationWarning: ""
+  // Session-only: which of the display controls are unfolded, and whether a
+  // dropdown popup currently owns the keyboard. Neither belongs in shell.json.
+  property bool displaySettingsOpen: false
+  property bool keysBlocked: false
 
   readonly property string dataScript: Model.filePath(Qt.resolvedUrl("prayer-data.sh"))
   readonly property string notificationScript: Model.filePath(Qt.resolvedUrl("prayer-notify.sh"))
@@ -49,9 +53,11 @@ Panel {
   readonly property string timeFormat: String(setting("timeFormat", "24-hour"))
   readonly property string language: String(setting("language", "English"))
   readonly property string arabicFont: String(setting("arabicFont", "Noto Naskh Arabic"))
+  readonly property string barDisplay: String(setting("barDisplay", "Strip + countdown"))
   readonly property bool isArabic: language === "Arabic"
   readonly property bool showSunrise: Model.bool(setting("showSunrise", true))
   readonly property bool showNightMarkers: Model.bool(setting("showNightMarkers", true))
+  readonly property int highlightBeforeMinutes: Math.max(0, Math.round(Model.number(setting("highlightBeforeMinutes", 15), 15)))
   readonly property int refreshHours: Math.max(1, Math.round(Model.number(setting("refreshHours", 24), 24)))
   readonly property bool notificationsEnabled: Model.bool(setting("notifications", false))
   readonly property int notifyBeforeMinutes: Math.max(0, Math.round(Model.number(setting("notifyBeforeMinutes", 10), 10)))
@@ -132,6 +138,43 @@ Panel {
   function syncLayout() {
     var file = root.panelStyle === "Compact" ? "PanelCompact.qml" : "PanelHorizon.qml"
     layoutLoader.setSource(Qt.resolvedUrl(file), { "host": root })
+  }
+
+  // Applied locally first so the panel repaints on the click itself; the
+  // shell.json write comes back through the bar as the same value. With no
+  // writable entry — the widget is not in the layout — it stays a session-only
+  // preference rather than doing nothing. The host widget holds its own copy
+  // and pushes it back down whenever it changes, so it has to be moved in step
+  // or the next write would go out from a stale one.
+  function persistSettings(values) {
+    var entry = { id: root.moduleName }
+    for (var existing in root.settings) if (existing !== "id") entry[existing] = root.settings[existing]
+    for (var key in values) entry[key] = values[key]
+
+    root.settings = entry
+    if (root.hostWidget && "settings" in root.hostWidget) root.hostWidget.settings = entry
+    if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
+      root.bar.shell.updateEntryInline(root.moduleName, entry)
+  }
+
+  function setSetting(key, value) {
+    var values = {}
+    values[key] = value
+    persistSettings(values)
+  }
+
+  function cycleSetting(key, ring) {
+    var next = Model.nextInRing(ring, root.setting(key, ring[0]))
+    if (next !== "") setSetting(key, next)
+  }
+
+  function cyclePanelStyle() { cycleSetting("panelStyle", Model.PANEL_STYLES) }
+  function cycleBarDisplay() { cycleSetting("barDisplay", Model.BAR_DISPLAYS) }
+  function cycleTimeFormat() { cycleSetting("timeFormat", Model.TIME_FORMATS) }
+  function cycleLanguage() { cycleSetting("language", Model.LANGUAGES) }
+
+  function toggleDisplaySettings() {
+    root.displaySettingsOpen = !root.displaySettingsOpen
   }
 
   function fetchCommand(force) {
@@ -379,10 +422,19 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      // A dropdown popup drives its own list with the same keys, so the panel
+      // stops reading them while one is open.
+      blocked: root.keysBlocked
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(value) {
-        if (value === "r" || value === "R") root.refresh(true)
+        var key = String(value).toLowerCase()
+        if (key === "r") root.refresh(true)
+        else if (key === "d") root.toggleDisplaySettings()
+        else if (key === "s") root.cyclePanelStyle()
+        else if (key === "b") root.cycleBarDisplay()
+        else if (key === "t") root.cycleTimeFormat()
+        else if (key === "a") root.cycleLanguage()
       }
 
       Flickable {
