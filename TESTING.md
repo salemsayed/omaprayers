@@ -8,17 +8,31 @@ coverage and qualification limits.
 ## 1. Source and manifest checks
 
 ```bash
-cd ~/Coding/omarchy-prayer-times
+cd ~/Documents/Coding/omarchy-prayer-times
 omarchy plugin validate .
 tests/run
-/usr/lib/qt6/bin/qmllint -I ~/.cache/omarchy-shell-ref *.qml
+/usr/lib/qt6/bin/qmllint -I ~/.cache/omarchy-shell-ref -I /usr/lib/qt6/qml *.qml
 shellcheck prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh tests/run
 ```
 
-`~/.cache/omarchy-shell-ref` is a local copy of the Omarchy shell's `qs`
-modules plus Quickshell's QML directory, allowing the `qs.Commons` and `qs.Ui`
-imports to resolve during linting. It is a developer convenience, not a
-repository dependency.
+The `qs.Commons` and `qs.Ui` imports resolve during linting only if the shell's
+modules are reachable under the module name `qs`, so the reference directory
+holds an entry called `qs` and Quickshell's own QML directory is passed as a
+second import path rather than copied in:
+
+```bash
+mkdir -p ~/.cache/omarchy-shell-ref
+ln -sfn /usr/share/omarchy/shell ~/.cache/omarchy-shell-ref/qs
+```
+
+It is a developer convenience, not a repository dependency.
+
+Errors are the signal, and there should be none. The run does report four
+categories of warning, all of them expected: `unqualified`, from inline
+components reading their file's outer id; `missing-property`, from the nested
+`Style.font` and `Style.spacing` tokens and from `bar`, which the shell declares
+as a bare `QtObject`; `signal-handler-parameters`, from the `Process.onExited`
+handlers; and `unused-imports`, which misjudges `qs.Ui`.
 
 `tests/run` covers 38 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
@@ -29,7 +43,7 @@ before publishing a change.
 ## 2. Install the local checkout
 
 ```bash
-omarchy plugin add file://$HOME/Coding/omarchy-prayer-times --enable
+omarchy plugin add file://$HOME/Documents/Coding/omarchy-prayer-times --enable
 omarchy bar move io.github.salemsayed.omaprayers --section right --index 0
 omarchy plugin list
 ```
