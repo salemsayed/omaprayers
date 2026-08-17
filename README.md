@@ -27,10 +27,14 @@ English presentation, offline caching, and optional notifications.
 - Optional prayer-time and advance notifications are deduplicated across
   monitors and shell reloads.
 
-- Presentation settings are changed from the panel itself. The footer carries a
-  layout switch, a bar-label switch, and a gear that unfolds the full display
-  section; each choice is written straight back to the bar entry in
+- Location and presentation are changed from the panel itself. The footer
+  carries a layout switch, a bar-label switch, and a gear that unfolds the
+  settings; each choice is written straight back to the bar entry in
   `shell.json`.
+- The city search resolves a place to coordinates **and its IANA timezone**, so
+  the four location settings always agree with each other. Same-named cities are
+  listed with their region and zone — `Springfield` spans two zones — and nothing
+  is applied until one is picked.
 
 Controls:
 
@@ -46,11 +50,15 @@ mouse:
 
 | Key | Effect |
 |---|---|
-| `D` | Show or hide the display section |
+| `D` | Show or hide the settings section |
+| `C` or `/` | Jump to the city search |
 | `S` | Switch the panel layout |
 | `B` | Cycle the bar label |
 | `T` | Switch 24-hour and 12-hour |
 | `A` | Switch English and Arabic |
+
+`H`, `J`, `K`, `L`, and `X` are reserved by Omarchy's panel key handling for
+cursor movement and delete, so they are not available as shortcuts here.
 
 ## Requirements
 
@@ -142,8 +150,16 @@ When `XDG_STATE_HOME` is set, replace `$HOME/.local/state` with that value.
 
 Prayer calendars come from the [AlAdhan API](https://aladhan.com/prayer-times-api).
 OmaPrayers requests calculated times for the explicit latitude, longitude,
-timezone, method, and adjustment settings supplied by the user; it does not
-infer a location from an IP address or ambiguous city name.
+timezone, method, and adjustment settings supplied by the user.
+
+Two further endpoints are used only by the panel's location picker, and only
+while it is in use. City search is [Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api),
+which returns each candidate's coordinates and IANA timezone; the picker shows
+the region and zone so the user resolves any ambiguity themselves. The optional
+Detect button reads the connection's apparent city from [wttr.in](https://wttr.in),
+and that result only fills the search box — it is never applied on its own,
+because the address derived from a connection is frequently wrong by enough to
+shift prayer times. A location becomes active only when the user picks it.
 
 The interface uses Omarchy's native Quickshell components and theme tokens.
 See [Third-party notices](THIRD_PARTY_NOTICES.md) for the reference material

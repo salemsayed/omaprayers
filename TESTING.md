@@ -34,7 +34,7 @@ components reading their file's outer id; `missing-property`, from the nested
 as a bare `QtObject`; `signal-handler-parameters`, from the `Process.onExited`
 handlers; and `unused-imports`, which misjudges `qs.Ui`.
 
-`tests/run` covers 38 JavaScript model scenarios plus option validation,
+`tests/run` covers 45 JavaScript model scenarios plus option validation,
 generated provider fixtures, fresh/cached/stale behavior, corrupt caches,
 malformed/short/incomplete responses, concurrent fetches, and notification
 deduplication and retry safety. There is no CI runner; run `tests/run` locally
@@ -69,6 +69,20 @@ The VM check list includes:
 - 12/24-hour clocks, invalid-setting UI, keyboard refresh, and clipped
   scrolling at Omarchy text size 20;
 - Tokyo Night and an Aether-generated light theme.
+
+The location picker adds these checks:
+
+- a city search lists candidates with their region and IANA timezone, and
+  same-named cities in different zones stay distinguishable;
+- picking one writes `locationLabel`, `latitude`, `longitude`, and `timezone`
+  together, clears `locationLabelAr`, leaves every other key untouched, and
+  refetches for the new location;
+- the panel never shows the previous location's timings under the new name;
+- `Detect` fills the search box and applies nothing on its own;
+- a failed or empty search reports itself and leaves the current location alone;
+- `C` and `/` reach the search field, and while it holds focus the panel's
+  single-letter shortcuts stop firing;
+- folding the section away returns the keys to the panel.
 
 The display controls add these checks:
 

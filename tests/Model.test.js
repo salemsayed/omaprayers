@@ -393,4 +393,87 @@ test("display labels are translated and unknown keys stay empty", () => {
   assert.equal(Model.uiLabel("nothingHere", "English"), "")
 })
 
+test("geocoding results keep the timezone that belongs to each row", () => {
+  // Springfield really does span two zones, which is why the zone cannot be
+  // derived from the name or the coordinates.
+  const raw = JSON.stringify({
+    results: [
+      { name: "Springfield", admin1: "Missouri", country: "United States", latitude: 37.21, longitude: -93.29, timezone: "America/Chicago" },
+      { name: "Springfield", admin1: "Massachusetts", country: "United States", latitude: 42.10, longitude: -72.59, timezone: "America/New_York" }
+    ]
+  })
+  const results = Model.parseLocationResults(raw)
+  assert.equal(results.length, 2)
+  assert.deepEqual(results[0], {
+    name: "Springfield",
+    region: "Missouri, United States",
+    latitude: 37.21,
+    longitude: -93.29,
+    timezone: "America/Chicago"
+  })
+  assert.equal(results[1].timezone, "America/New_York")
+})
+
+test("geocoding rows without a usable zone or coordinates are dropped", () => {
+  const raw = JSON.stringify({
+    results: [
+      { name: "No Zone", latitude: 1, longitude: 2 },
+      { name: "Blank Zone", latitude: 1, longitude: 2, timezone: "" },
+      { name: "No Coords", timezone: "Europe/London" },
+      { name: "", latitude: 1, longitude: 2, timezone: "Europe/London" },
+      { name: "Keeper", latitude: 51.5, longitude: -0.13, timezone: "Europe/London" }
+    ]
+  })
+  const results = Model.parseLocationResults(raw)
+  assert.equal(results.length, 1)
+  assert.equal(results[0].name, "Keeper")
+})
+
+test("an empty or malformed geocoding response yields no choices", () => {
+  assert.deepEqual(Model.parseLocationResults('{"generationtime_ms":0.53}'), [])
+  assert.deepEqual(Model.parseLocationResults("{"), [])
+  assert.deepEqual(Model.parseLocationResults(""), [])
+  assert.deepEqual(Model.parseLocationResults('{"results":null}'), [])
+})
+
+test("a region omits missing parts rather than leaving stray separators", () => {
+  const only = JSON.stringify({
+    results: [{ name: "Nowhere", country: "Iceland", latitude: 64, longitude: -22, timezone: "Atlantic/Reykjavik" }]
+  })
+  assert.equal(Model.parseLocationResults(only)[0].region, "Iceland")
+})
+
+test("a detected location is reduced to a search term", () => {
+  assert.equal(Model.detectedLocationQuery("Abū Kabīr, Sharqia, EG"), "Abū Kabīr")
+  assert.equal(Model.detectedLocationQuery("6th+of+October+City, Giza, EG"), "6th of October City")
+  assert.equal(Model.detectedLocationQuery("  Cairo  \n"), "Cairo")
+  assert.equal(Model.detectedLocationQuery(""), "")
+  assert.equal(Model.detectedLocationQuery(undefined), "")
+})
+
+test("committing a location writes all four keys and clears the Arabic label", () => {
+  const choice = {
+    name: "6th of October City",
+    region: "Giza Governorate, Egypt",
+    latitude: 29.94644,
+    longitude: 30.91687,
+    timezone: "Africa/Cairo"
+  }
+  assert.deepEqual(Model.locationSettings(choice), {
+    locationLabel: "6th of October City",
+    locationLabelAr: "",
+    latitude: "29.94644",
+    longitude: "30.91687",
+    timezone: "Africa/Cairo"
+  })
+})
+
+test("an incomplete choice commits nothing at all", () => {
+  assert.equal(Model.locationSettings(null), null)
+  assert.equal(Model.locationSettings({ name: "X", latitude: 1, longitude: 2 }), null)
+  assert.equal(Model.locationSettings({ name: "X", latitude: 1, longitude: 2, timezone: "" }), null)
+  assert.equal(Model.locationSettings({ name: "", latitude: 1, longitude: 2, timezone: "Europe/London" }), null)
+  assert.equal(Model.locationSettings({ name: "X", latitude: NaN, longitude: 2, timezone: "Europe/London" }), null)
+})
+
 console.log(`Model tests passed (${count} scenarios)`)

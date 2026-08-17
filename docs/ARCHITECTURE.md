@@ -37,9 +37,30 @@ the local half still applies, which makes an unplaced widget's controls a
 session preference instead of a dead click. `BarWidget.qml` delegates its
 middle-click to the panel rather than writing its own copy.
 
-The settable keys are exactly those absent from `Panel.configKey`, so a display
-change cannot invalidate the cache or start a fetch. Option rings, their
-bilingual labels, and the wrap-around cycle live in `Model.js` under test.
+The display keys are exactly those absent from `Panel.configKey`, so changing one
+cannot invalidate the cache or start a fetch. Option rings, their bilingual
+labels, and the wrap-around cycle live in `Model.js` under test.
+
+`PanelLocation.qml` is the exception, and it is deliberately the only one. Its
+four keys *are* part of `configKey`, so a commit drops the schedule and refetches
+— which is why it commits on an explicit pick rather than on a keystroke, and why
+`Model.locationSettings` returns the four keys as one object or `null`. A partial
+write would leave the timezone describing a different place than the
+coordinates, and that is the one inconsistency the cache fingerprint cannot
+catch, because the fingerprint would faithfully match the incoherent config.
+`locationLabelAr` is cleared on commit rather than carried over, since an Arabic
+label kept from the previous city would name the wrong place.
+
+Geocoding runs through a debounced `curl`, one request in flight at a time, with
+the newest query refetched when the previous finishes. `Model.parseLocationResults`
+drops any candidate without a timezone instead of guessing one.
+
+Two details of the host key handling shape the picker. `PanelKeyCatcher` uses
+`Keys.priority: Keys.BeforeItem`, so it takes keys even from a focused
+descendant; the search field therefore drives `keysBlocked`, which the catcher's
+`blocked` property follows, and the panel restores it when the section folds
+away. The catcher also claims `h`, `j`, `k`, `l`, and `x` before emitting
+`textKey`, so shortcuts avoid those letters.
 
 ## Data layer
 
@@ -96,7 +117,12 @@ then exposes a warning instead of retrying forever.
 ## Deliberate omissions
 
 - No audio or remote media downloads.
-- No IP geolocation or ambiguous city-to-coordinate lookup.
+- No location that the user did not confirm. City search resolves candidates
+  through Open-Meteo geocoding, but each one carries its region and IANA
+  timezone and only becomes active when picked, so an ambiguous name is never
+  silently resolved. The Detect button reads the connection's apparent city and
+  fills the search box with it; it cannot commit, because that address is
+  regularly wrong by enough to move prayer times.
 - No background daemon or systemd unit.
 - No local astronomical implementation to vendor and independently qualify.
 - No mosque iqama schedules; calculation adjustments cover authority-specific

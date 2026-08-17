@@ -21,6 +21,19 @@ Omarchy Quattro stores widget settings directly on the widget's entry in
 | `tune` | nine zeroes | Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight offsets |
 | `customMethodSettings` | empty | Method 99 values: Fajr angle, Maghrib angle/minutes, Isha angle/minutes |
 
+`locationLabel`, `latitude`, `longitude`, and `timezone` are settable from the
+panel: press `C` (or `/`) with the panel open, or use the gear, and search for a
+city. Candidates list their region and IANA timezone, and picking one writes all
+four keys together — a search resolves the zone rather than leaving it to be
+matched by hand, which is the mistake this section otherwise warns about. The
+Detect button fills the search box from the connection's apparent city and waits
+for confirmation; it never applies a location by itself.
+
+Committing a location clears the cached calendar and fetches again, because these
+keys are part of the cache fingerprint. `locationLabelAr` is cleared at the same
+time, so set it afterwards if an Arabic label is wanted. The remaining
+calculation settings below stay configuration-only.
+
 Method 99 requires exactly three comma-separated custom values. Conversely,
 custom values are rejected for every non-99 method so a setting cannot appear
 active while being omitted from the provider request.

@@ -152,6 +152,22 @@ Column {
       color: Util.alpha(displayRoot.host.foreground, 0.16)
     }
 
+    // Location leads the fold because it is the setting a new install most
+    // likely needs, and it is kept visually apart from the display rows below
+    // because committing it refetches the calendar rather than just repainting.
+    PanelSectionHeader {
+      text: Model.uiLabel("location", displayRoot.host.language)
+      foreground: displayRoot.host.foreground
+      fontFamily: displayRoot.host.nameFontFamily
+      bottomPadding: Style.space(3)
+    }
+
+    PanelLocation {
+      host: displayRoot.host
+    }
+
+    Item { width: 1; height: Style.space(6) }
+
     PanelSectionHeader {
       text: Model.uiLabel("display", displayRoot.host.language)
       foreground: displayRoot.host.foreground

@@ -43,6 +43,14 @@ var BAR_DISPLAYS = [
 // is bilingual everywhere else, so its own controls follow `language` too
 // rather than staying English inside an otherwise Arabic panel.
 var UI_LABELS = {
+  location: ["Location", "الموقع"],
+  detect: ["Detect", "تحديد"],
+  citySearch: ["Search for a city", "ابحث عن مدينة"],
+  searching: ["Searching…", "جاري البحث…"],
+  noMatches: ["No matching city", "لا توجد مدينة مطابقة"],
+  searchFailed: ["City search failed", "فشل البحث عن المدينة"],
+  detectFailed: ["Could not detect a location", "تعذر تحديد الموقع"],
+  detectHint: ["Detected from your connection — confirm it", "محدد من اتصالك — تأكيده"],
   display: ["Display", "العرض"],
   layout: ["Layout", "التصميم"],
   clock: ["Clock", "الساعة"],
@@ -151,6 +159,67 @@ function optionModel(ring, language) {
   for (var i = 0; i < ring.length; i++)
     out.push({ value: ring[i], label: optionLabel(ring[i], language) })
   return out
+}
+
+// Open-Meteo geocoding response to a list of choices. The timezone is why this
+// endpoint is used at all: prayer times are computed against an absolute zone,
+// and deriving one from coordinates would be a silent correctness risk. A
+// result without a zone is therefore dropped rather than guessed at — a search
+// for "Springfield" spans two different zones, so the zone has to come from the
+// row the user actually picked.
+function parseLocationResults(raw) {
+  var data = parseEnvelope(raw)
+  if (!data || !(data.results instanceof Array)) return []
+  var out = []
+  for (var i = 0; i < data.results.length; i++) {
+    var result = data.results[i]
+    if (!result || text(result.name) === "") continue
+    var latitude = Number(result.latitude)
+    var longitude = Number(result.longitude)
+    if (!isFinite(latitude) || !isFinite(longitude)) continue
+    if (text(result.timezone) === "") continue
+    var region = [text(result.admin1), text(result.country)]
+      .filter(function(part) { return part !== "" })
+      .join(", ")
+    out.push({
+      name: text(result.name),
+      region: region,
+      latitude: latitude,
+      longitude: longitude,
+      timezone: text(result.timezone)
+    })
+  }
+  return out
+}
+
+// wttr.in answers `?format=%l` with "City, Region, CC". Only the leading
+// segment is kept, and it is used to seed the search box rather than treated as
+// a location: the address it derives from the connection can be a long way from
+// where the user actually is.
+function detectedLocationQuery(raw) {
+  var value = text(raw).replace(/^\s+|\s+$/g, "")
+  if (value === "") return ""
+  return value.split(",")[0].replace(/\+/g, " ").replace(/^\s+|\s+$/g, "")
+}
+
+// The four location keys are written as one unit. A partial write would leave
+// the timezone describing a different place than the coordinates, which is the
+// one inconsistency the cache fingerprint cannot detect. locationLabelAr is
+// cleared because an Arabic label kept from the previous city would name the
+// wrong place; the panel falls back to locationLabel when it is empty.
+function locationSettings(choice) {
+  if (!choice) return null
+  var latitude = Number(choice.latitude)
+  var longitude = Number(choice.longitude)
+  if (!isFinite(latitude) || !isFinite(longitude)) return null
+  if (text(choice.timezone) === "" || text(choice.name) === "") return null
+  return {
+    locationLabel: text(choice.name),
+    locationLabelAr: "",
+    latitude: String(latitude),
+    longitude: String(longitude),
+    timezone: text(choice.timezone)
+  }
 }
 
 // A value outside the ring lands on the first option rather than nowhere, so a
@@ -528,6 +597,9 @@ if (typeof module !== "undefined") {
     optionLabel: optionLabel,
     optionModel: optionModel,
     nextInRing: nextInRing,
+    parseLocationResults: parseLocationResults,
+    detectedLocationQuery: detectedLocationQuery,
+    locationSettings: locationSettings,
     dayForDate: dayForDate,
     today: today,
     timing: timing,

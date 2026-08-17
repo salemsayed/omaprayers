@@ -31,6 +31,15 @@ Panel {
   property bool displaySettingsOpen: false
   property bool keysBlocked: false
 
+  // Location picker state. All session-only: nothing here is written until the
+  // user picks a row, and then only through commitLocation.
+  property var locationChoices: []
+  property string locationStatus: ""
+  property string geocodePendingQuery: ""
+  property string geocodeActiveQuery: ""
+  property bool detectingLocation: false
+  readonly property bool searchingLocation: geocodeProcess.running
+
   readonly property string dataScript: Model.filePath(Qt.resolvedUrl("prayer-data.sh"))
   readonly property string notificationScript: Model.filePath(Qt.resolvedUrl("prayer-notify.sh"))
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
@@ -175,6 +184,85 @@ Panel {
 
   function toggleDisplaySettings() {
     root.displaySettingsOpen = !root.displaySettingsOpen
+    // Folding the section away takes the search field with it, so the key
+    // catcher has to be handed its keys back or the panel would go deaf.
+    if (!root.displaySettingsOpen) root.keysBlocked = false
+  }
+
+  // Debounced so a typed query issues one request per pause rather than per
+  // keystroke. Only one curl runs at a time; if the query moved on while a
+  // request was in flight, the latest one is fetched when it finishes.
+  function searchLocation(query) {
+    var trimmed = String(query || "").replace(/^\s+|\s+$/g, "")
+    root.geocodePendingQuery = trimmed
+    if (trimmed.length < 2) {
+      root.locationChoices = []
+      root.locationStatus = ""
+      geocodeDebounce.stop()
+      return
+    }
+    geocodeDebounce.restart()
+  }
+
+  function startGeocode() {
+    if (geocodeProcess.running || root.geocodePendingQuery.length < 2) return
+    root.geocodeActiveQuery = root.geocodePendingQuery
+    root.locationStatus = ""
+    geocodeProcess.command = ["curl", "-fsS", "--max-time", "6",
+      "https://geocoding-api.open-meteo.com/v1/search?name="
+        + encodeURIComponent(root.geocodeActiveQuery) + "&count=6&language=en&format=json"]
+    geocodeProcess.running = true
+  }
+
+  function applyLocationResults(raw) {
+    var choices = Model.parseLocationResults(raw)
+    root.locationChoices = choices
+    root.locationStatus = choices.length === 0
+      ? Model.uiLabel("noMatches", root.language)
+      : ""
+  }
+
+  // The detected place only seeds the search box. It is never committed on its
+  // own: the address derived from a connection can be a long way from where the
+  // user is, and a wrong location here means wrong prayer times.
+  function detectLocation() {
+    if (detectProcess.running) return
+    root.detectingLocation = true
+    root.locationStatus = ""
+    detectProcess.running = true
+  }
+
+  function applyDetectedLocation(raw) {
+    var query = Model.detectedLocationQuery(raw)
+    root.detectingLocation = false
+    if (query === "") {
+      root.locationStatus = Model.uiLabel("detectFailed", root.language)
+      return
+    }
+    root.locationStatus = Model.uiLabel("detectHint", root.language)
+    root.locationDetected(query)
+  }
+
+  // Emitted so the picker can put the detected term in its field and run the
+  // search; the panel does not own the text input.
+  signal locationDetected(string query)
+
+  // The key catcher owns Tab for switching panels, so the search field would
+  // otherwise be mouse-only.
+  signal locationSearchRequested()
+
+  function requestLocationSearch() {
+    root.displaySettingsOpen = true
+    root.locationSearchRequested()
+  }
+
+  function commitLocation(choice) {
+    var values = Model.locationSettings(choice)
+    if (!values) return
+    root.locationChoices = []
+    root.locationStatus = ""
+    root.geocodePendingQuery = ""
+    persistSettings(values)
   }
 
   function fetchCommand(force) {
@@ -388,6 +476,44 @@ Panel {
     onExited: function(exitCode) { root.finishNotification(exitCode) }
   }
 
+  Process {
+    id: geocodeProcess
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.applyLocationResults(text)
+    }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.locationChoices = []
+        root.locationStatus = Model.uiLabel("searchFailed", root.language)
+      }
+      // The query moved on while this request was in flight.
+      if (root.geocodePendingQuery !== root.geocodeActiveQuery)
+        Qt.callLater(root.startGeocode)
+    }
+  }
+
+  Process {
+    id: detectProcess
+    command: ["curl", "-fsS", "--max-time", "5", "https://wttr.in/?format=%l"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.applyDetectedLocation(text)
+    }
+    onExited: function(exitCode) {
+      if (exitCode !== 0 && root.detectingLocation) {
+        root.detectingLocation = false
+        root.locationStatus = Model.uiLabel("detectFailed", root.language)
+      }
+    }
+  }
+
+  Timer {
+    id: geocodeDebounce
+    interval: 350
+    onTriggered: root.startGeocode()
+  }
+
   Timer {
     id: notificationRetry
     interval: 5000
@@ -427,6 +553,8 @@ Panel {
       blocked: root.keysBlocked
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
+      // PanelKeyCatcher claims h, j, k, l and x before textKey is emitted, for
+      // cursor movement and delete, so none of those can be a shortcut here.
       onTextKey: function(value) {
         var key = String(value).toLowerCase()
         if (key === "r") root.refresh(true)
@@ -435,6 +563,7 @@ Panel {
         else if (key === "b") root.cycleBarDisplay()
         else if (key === "t") root.cycleTimeFormat()
         else if (key === "a") root.cycleLanguage()
+        else if (key === "c" || key === "/") root.requestLocationSearch()
       }
 
       Flickable {
