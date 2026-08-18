@@ -37,13 +37,19 @@ BarWidget {
   )
   readonly property bool prayerSoon: isFinite(minutesToNext) && minutesToNext >= 0 && minutesToNext <= highlightBeforeMinutes
   readonly property bool stripModeActive: barDisplay === "Strip + countdown" && !root.vertical
+  readonly property bool horizontalTextMode: !root.vertical && !stripModeActive && !iconOnly
+  readonly property int horizontalTextOffset: isArabic && barDisplay === "Countdown only"
+    ? Style.space(2)
+    : Style.space(1)
   readonly property color chipForeground: prayerSoon
     ? Color.accent
     : (bar ? bar.barForeground : Color.foreground)
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
-  readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property real openPanelIndicatorWidth: horizontalTextMode
+    ? horizontalLabel.implicitWidth
+    : button.labelWidth
 
   function injectPanel() {
     var target = panelLoader.item
@@ -123,7 +129,7 @@ BarWidget {
     text: root.displayText
     fontSize: root.iconOnly ? Style.bar.iconFont : Style.font.bodySmall
     horizontalMargin: root.iconOnly ? 7.5 : 8.5
-    labelVisible: !root.stripModeActive
+    labelVisible: !root.stripModeActive && !root.horizontalTextMode
     fixedWidth: root.stripModeActive ? stripRow.implicitWidth + Style.spaceReal(17) : -1
     fixedHeight: root.vertical
       ? Math.max(12, button.labelWidth + button.scaledVerticalPadding * 2)
@@ -140,6 +146,21 @@ BarWidget {
       else root.togglePanel()
     }
 
+    Text {
+      id: horizontalLabel
+
+      visible: root.horizontalTextMode
+      anchors.centerIn: parent
+      anchors.verticalCenterOffset: root.horizontalTextOffset
+      text: root.displayText
+      color: button.active && button.useActiveColor ? button.activeColor : button.foreground
+      font.family: button.fontFamily
+      font.pixelSize: button.fontSize
+      renderType: Text.NativeRendering
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
+    }
+
     Row {
       id: stripRow
 
@@ -150,6 +171,7 @@ BarWidget {
       Item {
         id: miniStrip
 
+        anchors.verticalCenter: parent.verticalCenter
         width: Style.space(34)
         height: Style.space(8)
 
@@ -192,6 +214,7 @@ BarWidget {
 
       Text {
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: root.isArabic ? Style.space(2) : Style.space(1)
         text: Model.remaining(root.nextPrayer, root.nowTick, root.language)
         color: root.chipForeground
         font.family: root.isArabic ? root.arabicFont : button.fontFamily
