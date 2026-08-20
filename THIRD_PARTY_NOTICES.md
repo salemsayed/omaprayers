@@ -18,5 +18,4 @@ The implementation was informed by these open-source projects and contracts:
   MIT: confirmation of the third-party bar-widget integration path.
 
 Prayer calendar data is requested at runtime from
-[AlAdhan](https://aladhan.com/prayer-times-api). Review its current terms and
-service policy before public distribution.
+[AlAdhan](https://aladhan.com/prayer-times-api).
