@@ -1,5 +1,7 @@
 const assert = require("node:assert/strict")
-const Model = require("../Model.js")
+const path = require("node:path")
+const requireQmlJs = require("./qml-js-loader.js")
+const Model = requireQmlJs(path.join(__dirname, "..", "Model.js"), module)
 
 function value(at, time) {
   return { at, time }
@@ -19,7 +21,7 @@ function day(date, offset, times) {
 
 const schedule = {
   ok: true,
-  status: "cached",
+  status: "local",
   today: "2026-08-14",
   tomorrow: "2026-08-15",
   config: {
@@ -139,11 +141,11 @@ test("Arabic labels and English fallback work", () => {
   assert.equal(Model.barText(next, now, "Arabic", "Name + time", "12-hour"), "\u2067الظهر 1:00 PM\u2069")
 })
 
-test("tooltip includes location, time, stale state, and tolerates an absent method", () => {
+test("tooltip includes location and time and tolerates an absent method", () => {
   const now = new Date("2026-08-14T12:55:00+03:00")
   const next = Model.nextPrayer(schedule, now)
-  assert.equal(Model.tooltip({ ...schedule, status: "stale" }, next, now, "English", "24-hour"),
-    "Cairo · Dhuhr in 5m (13:00) · stale cache")
+  assert.equal(Model.tooltip(schedule, next, now, "English", "24-hour"),
+    "Cairo · Dhuhr in 5m (13:00)")
   assert.equal(Model.tooltip(null, null, now, "English", "24-hour"), "Prayer times unavailable")
 })
 
@@ -165,13 +167,9 @@ test("Hijri label uses display then falls back to fields", () => {
 })
 
 test("schedule status labels are user-facing", () => {
-  assert.equal(Model.statusLabel("fresh"), "online data")
-  assert.equal(Model.statusLabel("cached"), "saved data")
-  assert.equal(Model.statusLabel("stale"), "offline cache")
+  assert.equal(Model.statusLabel("local"), "calculated offline")
   assert.equal(Model.statusLabel("error"), "not loaded")
-  assert.equal(Model.statusLabel("fresh", "Arabic"), "بيانات محدثة")
-  assert.equal(Model.statusLabel("cached", "Arabic"), "بيانات محفوظة")
-  assert.equal(Model.statusLabel("stale", "Arabic"), "نسخة محفوظة دون اتصال")
+  assert.equal(Model.statusLabel("local", "Arabic"), "محسوبة دون اتصال")
   assert.equal(Model.statusLabel("error", "Arabic"), "غير محمل")
 })
 
@@ -275,7 +273,7 @@ test("night markers are ordered within the night band and include Isha", () => {
 })
 
 test("method short names cover known ids and deterministic fallbacks", () => {
-  assert.equal(Model.methodShortName(5, "Egyptian General Authority of Survey"), "EGAS")
+  assert.equal(Model.methodShortName(5, "Egyptian General Authority of Survey"), "Egypt")
   assert.equal(Model.methodShortName(42, "Egyptian General Authority of Survey"), "EGAS")
   assert.equal(Model.methodShortName(42, ""), "METHOD 42")
 })
@@ -331,16 +329,89 @@ test("tooltip appends the full calculation method from the prayer day", () => {
   const now = new Date("2026-08-14T12:55:00+03:00")
   const withMethod = {
     ...schedule,
-    status: "stale",
     days: schedule.days.map(entry => entry.date === schedule.today
       ? { ...entry, methodName: "Egyptian General Authority of Survey" }
       : entry)
   }
   const next = Model.nextPrayer(withMethod, now)
   assert.equal(Model.tooltip(withMethod, next, now, "English", "24-hour"),
-    "Cairo · Dhuhr in 5m (13:00) · stale cache · Egyptian General Authority of Survey")
+    "Cairo · Dhuhr in 5m (13:00) · Egyptian General Authority of Survey")
   assert.equal(Model.tooltip(withMethod, next, now, "Arabic", "24-hour", "القاهرة"),
-    "القاهرة · الظهر بعد 5 د (13:00) · نسخة محفوظة دون اتصال · Egyptian General Authority of Survey")
+    "القاهرة · الظهر بعد 5 د (13:00) · Egyptian General Authority of Survey")
+})
+
+test("method options follow catalog order and keep string values", () => {
+  const options = Model.methodOptions("English")
+  assert.deepEqual(options.map(option => option.value), [
+    "3", "2", "5", "4", "1", "7", "0", "8", "9", "10", "11", "12",
+    "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "99"
+  ])
+  assert.deepEqual(options.map(option => option.value), Model.METHODS.map(method => String(method.id)))
+  assert.equal(options.find(option => option.value === "5").label,
+    "Egyptian General Authority of Survey")
+  assert.equal(options.find(option => option.value === "5").description,
+    "Fajr 19.5° · Isha 17.5°")
+})
+
+test("method options localize labels and describe all custom values as angles", () => {
+  const arabic = Model.methodOptions("Arabic")
+  assert.equal(arabic.find(option => option.value === "17").label,
+    "دائرة التقدم الإسلامي الماليزية")
+  assert.equal(Model.methodOptions("English").find(option => option.value === "99").description,
+    "Fajr 15° · Maghrib sunset · Isha 15°")
+  assert.equal(Model.methodOptions("English", "18,null,17")
+    .find(option => option.value === "99").description,
+    "Fajr 18° · Maghrib sunset · Isha 17°")
+  assert.equal(Model.methodOptions("English", "18,4,17")
+    .find(option => option.value === "99").description,
+    "Fajr 18° · Maghrib 4° · Isha 17°")
+})
+
+test("method labels and short names come from the shared engine catalog", () => {
+  assert.equal(Model.methodLabel(13, "English"), "Diyanet İşleri Başkanlığı, Turkey")
+  assert.equal(Model.methodLabel(13, "Arabic"), "رئاسة الشؤون الدينية التركية")
+  assert.equal(Model.methodShortName(13, "fallback"), "Diyanet")
+  assert.deepEqual([3, 2, 12, 13, 17, 20].map(id => Model.methodShortName(id, "", "Arabic")),
+    ["الرابطة", "أمريكا الشمالية", "فرنسا", "تركيا", "ماليزيا", "إندونيسيا"])
+  assert.equal(Model.methodLabel(42, "English"), "42")
+})
+
+test("country suggestions map catalog regions without repeating the selection", () => {
+  assert.deepEqual(Model.suggestedMethod("EG", 3), {
+    id: 5,
+    label: "Egyptian General Authority of Survey"
+  })
+  assert.deepEqual(Model.suggestedMethod("us", 5), {
+    id: 2,
+    label: "Islamic Society of North America"
+  })
+  assert.equal(Model.suggestedMethod("GB", 5), null)
+  assert.equal(Model.suggestedMethod("EG", "5"), null)
+})
+
+test("tune helpers normalize nine values and preserve config-only offsets", () => {
+  assert.deepEqual(Model.tuneValues("7,2,3,4,5,6,-8,9,10"),
+    [7, 2, 3, 4, 5, 6, -8, 9, 10])
+  assert.deepEqual(Model.tuneValues("bad"), [0, 0, 0, 0, 0, 0, 0, 0, 0])
+  assert.equal(Model.tuneText([7, 2, 3, 4, 5, 6, -8, 9, 10]),
+    "7,2,3,4,5,6,-8,9,10")
+  const edited = Model.tuneValues("7,2,3,4,5,6,-8,9,10")
+  edited[1] = 12
+  assert.equal(Model.tuneText(edited), "7,12,3,4,5,6,-8,9,10")
+  assert.deepEqual(Model.TUNE_EDITABLE, ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"])
+})
+
+test("tune summaries omit zeros and localize every configured timing", () => {
+  assert.equal(Model.tuneSummary("0,0,0,0,0,0,0,0,0", "English"), "")
+  assert.equal(Model.tuneSummary("0,2,0,0,0,0,0,-3,0", "English"),
+    "Fajr +2 · Isha −3")
+  assert.equal(Model.tuneSummary("1,0,0,0,0,0,-2,0,3", "Arabic"),
+    "الإمساك +1 · الغروب −2 · منتصف الليل +3")
+})
+
+test("school labels use the option catalog in both languages", () => {
+  assert.equal(Model.schoolLabel(0, "English"), "Shafi")
+  assert.equal(Model.schoolLabel(1, "Arabic"), "حنفي")
 })
 
 test("option rings cycle and wrap in the order the panel buttons follow", () => {
@@ -393,13 +464,13 @@ test("display labels are translated and unknown keys stay empty", () => {
   assert.equal(Model.uiLabel("nothingHere", "English"), "")
 })
 
-test("geocoding results keep the timezone that belongs to each row", () => {
+test("geocoding results keep the timezone and country code that belong to each row", () => {
   // Springfield really does span two zones, which is why the zone cannot be
   // derived from the name or the coordinates.
   const raw = JSON.stringify({
     results: [
-      { name: "Springfield", admin1: "Missouri", country: "United States", latitude: 37.21, longitude: -93.29, timezone: "America/Chicago" },
-      { name: "Springfield", admin1: "Massachusetts", country: "United States", latitude: 42.10, longitude: -72.59, timezone: "America/New_York" }
+      { name: "Springfield", admin1: "Missouri", country: "United States", country_code: "US", latitude: 37.21, longitude: -93.29, timezone: "America/Chicago" },
+      { name: "Springfield", admin1: "Massachusetts", country: "United States", country_code: "US", latitude: 42.10, longitude: -72.59, timezone: "America/New_York" }
     ]
   })
   const results = Model.parseLocationResults(raw)
@@ -407,11 +478,14 @@ test("geocoding results keep the timezone that belongs to each row", () => {
   assert.deepEqual(results[0], {
     name: "Springfield",
     region: "Missouri, United States",
+    country: "United States",
+    countryCode: "US",
     latitude: 37.21,
     longitude: -93.29,
     timezone: "America/Chicago"
   })
   assert.equal(results[1].timezone, "America/New_York")
+  assert.equal(results[1].countryCode, "US")
 })
 
 test("geocoding rows without a usable zone or coordinates are dropped", () => {

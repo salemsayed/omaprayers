@@ -5,11 +5,9 @@ import "Model.js" as Model
 
 // The location picker inside the panel's settings fold.
 //
-// Unlike the display controls, changing location invalidates the cached
-// calendar: the location keys are part of host.configKey, so a commit drops the
-// schedule and refetches. That is why nothing here writes on a keystroke — only
-// picking a row commits, and it commits label, coordinates, and timezone as one
-// unit through host.commitLocation.
+// Changing location recomputes every instant, so nothing here writes on a
+// keystroke. Picking a row commits label, coordinates, and timezone as one unit
+// through host.commitLocation.
 //
 // The Detect button fills the field from the connection's apparent city and
 // leaves it for the user to confirm. It never commits: the derived address can
@@ -82,6 +80,63 @@ Column {
       fontFamily: locationRoot.host.nameFontFamily
       fontSize: Style.font.caption
       onClicked: locationRoot.host.detectLocation()
+    }
+  }
+
+  Item {
+    id: suggestionRow
+
+    visible: locationRoot.host.pendingMethodSuggestion !== null
+    width: parent.width
+    height: visible ? Math.max(suggestionText.implicitHeight, suggestionButtons.implicitHeight) : 0
+
+    Text {
+      id: suggestionText
+      anchors.left: parent.left
+      anchors.right: suggestionButtons.left
+      anchors.rightMargin: Style.space(6)
+      anchors.verticalCenter: parent.verticalCenter
+      text: {
+        var suggestion = locationRoot.host.pendingMethodSuggestion
+        if (!suggestion) return ""
+        return Model.uiLabel("suggested", locationRoot.host.language) + " "
+          + suggestion.country + ": "
+          + Model.methodLabel(suggestion.id, locationRoot.host.language)
+      }
+      color: locationRoot.host.faint
+      font.family: locationRoot.host.nameFontFamily
+      font.pixelSize: Style.font.caption
+      elide: Text.ElideRight
+    }
+
+    Row {
+      id: suggestionButtons
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: Style.space(3)
+
+      Button {
+        text: Model.uiLabel("apply", locationRoot.host.language)
+        bordered: true
+        foreground: locationRoot.host.foreground
+        background: "transparent"
+        fontFamily: locationRoot.host.nameFontFamily
+        fontSize: Style.font.caption
+        verticalPadding: Style.space(2)
+        onClicked: locationRoot.host.applySuggestedMethod()
+      }
+
+      Button {
+        text: "×"
+        tooltipText: Model.uiLabel("dismiss", locationRoot.host.language)
+        foreground: locationRoot.host.faint
+        background: "transparent"
+        fontFamily: locationRoot.host.fontFamily
+        fontSize: Style.font.bodySmall
+        horizontalPadding: Style.space(5)
+        verticalPadding: Style.space(2)
+        onClicked: locationRoot.host.dismissMethodSuggestion()
+      }
     }
   }
 

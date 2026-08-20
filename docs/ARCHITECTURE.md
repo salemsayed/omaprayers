@@ -9,9 +9,10 @@ properties, and hosts the detail panel. The popup uses
 the same ownership and popout-switch contract as the Quattro clock and weather
 widgets.
 
-`Panel.qml` owns settings, data and cache state, IPC, notifications, refresh
-scheduling, and the native Omarchy panel. `PanelHorizon.qml` and
-`PanelCompact.qml` are pure presentation layouts. `Panel.qml` selects them with
+`Panel.qml` owns settings, timezone data, the calculated schedule, IPC,
+notifications, refresh scheduling, and the native Omarchy panel.
+`PanelHorizon.qml` and `PanelCompact.qml` are pure presentation layouts.
+`Panel.qml` selects them with
 `Loader.setSource(url, { "host": root })`, which supplies the `host`
 back-reference as an initial property before any layout binding evaluates.
 
@@ -21,10 +22,11 @@ placement come from the Omarchy shell. The Loader also passes inherited
 
 ## Writing settings back
 
-`PanelDisplay.qml` is the footer and the display controls both layouts end with.
-Its controls are the shell's own `ButtonGroup`, `Dropdown`, `ToggleSwitch`, and
-`PanelSlider`, so the settings surface is themed by the same tokens as the rest
-of the panel.
+`PanelDisplay.qml` is the footer and settings fold both layouts end with. It
+contains Location, Calculation and Display sections. Its controls use the
+shell's `ButtonGroup`, `Dropdown`, `SearchableDropdown`, `NumberField`,
+`ToggleSwitch`, and `PanelSlider`, so the settings surface uses the same theme
+tokens as the rest of the panel.
 
 `Panel.persistSettings()` is the single writer. It merges the new values into a
 copy of the widget entry, assigns it to its own `settings` and to
@@ -37,19 +39,21 @@ the local half still applies, which makes an unplaced widget's controls a
 session preference instead of a dead click. `BarWidget.qml` delegates its
 middle-click to the panel rather than writing its own copy.
 
-The display keys are exactly those absent from `Panel.configKey`, so changing one
-cannot invalidate the cache or start a fetch. Option rings, their bilingual
-labels, and the wrap-around cycle live in `Model.js` under test.
+The display keys are exactly those absent from `Panel.configKey`, so changing
+one does not recalculate the schedule. Calculation keys feed `configKey` and
+rebuild the schedule after a 250 ms debounce. A timezone change discards the
+old zone table and runs `prayer-zone.sh`; the other calculation settings reuse
+the current table. Option rings, bilingual labels, tuning helpers, method
+options and wrap-around cycles live in `Model.js` under test.
 
-`PanelLocation.qml` is the exception, and it is deliberately the only one. Its
-four keys *are* part of `configKey`, so a commit drops the schedule and refetches
-— which is why it commits on an explicit pick rather than on a keystroke, and why
-`Model.locationSettings` returns the four keys as one object or `null`. A partial
-write would leave the timezone describing a different place than the
-coordinates, and that is the one inconsistency the cache fingerprint cannot
-catch, because the fingerprint would faithfully match the incoherent config.
-`locationLabelAr` is cleared on commit rather than carried over, since an Arabic
-label kept from the previous city would name the wrong place.
+`PanelLocation.qml` commits only on an explicit pick.
+`Model.locationSettings` returns the label, coordinates and timezone as one
+object or `null`; a partial write could leave the timezone describing a
+different place than the coordinates. `locationLabelAr` is cleared on commit
+rather than carried over, since an Arabic label kept from the previous city
+would name the wrong place. After a mapped country is picked,
+`Model.suggestedMethod` may expose an Apply/Dismiss row. It never changes the
+method on its own.
 
 Geocoding runs through a debounced `curl`, one request in flight at a time, with
 the newest query refetched when the previous finishes. `Model.parseLocationResults`
@@ -64,36 +68,43 @@ away. The catcher also claims `h`, `j`, `k`, `l`, and `x` before emitting
 
 ## Data layer
 
-`prayer-data.sh` validates every option before making a request. It asks
-AlAdhan's coordinate calendar endpoint for the current and following month
-with `iso8601=true` and an explicit `timezonestring`.
+```text
+BarWidget.qml ─┐
+               ├─ Panel.qml ─ prayer-zone.sh --timezone Z ─▶ zone JSON
+PanelDisplay   │      │
+PanelLocation  │      └─ Engine.buildSchedule(config, zone, nowMs)
+PanelHorizon   │                         ▲
+PanelCompact ──┘                         └─ Engine.js + Model.js
+```
 
-The normalized cache stores:
+`prayer-zone.sh` validates the IANA timezone and emits local day starts plus
+the exact UTC-offset transitions for a 70-day window. It uses GNU `date`,
+installed tzdata and `zdump`; it does not use the network. The first day is
+yesterday in the target timezone, so the table covers today, tomorrow and at
+least two months of forward calculation. The script also removes legacy
+calendar cache and lock files left by releases before 2.3.0.
 
-- the exact calculation configuration and a SHA-256 fingerprint;
-- provider timestamps as absolute ISO-8601 instants;
-- separate `HH:mm` strings for display in the target timezone;
-- Gregorian and Hijri dates;
-- the API-reported method and timezone;
-- cache freshness, fetch time, target-local today/tomorrow, and the next
-  target-local midnight.
+`Engine.js` is pure ES5 shared by QML and Node tests. Its public surface is the
+method catalog, method parameter helpers, prayer/day calculations, Umm
+al-Qura Hijri conversion, schedule construction, timezone helpers and solar
+test helpers. The astronomy is a port of adhan-js and works in UTC epoch
+milliseconds. It applies method angles and intervals, Asr school,
+high-latitude and polar rules, rounding, Hijri-dependent Umm al-Qura Isha,
+and per-time tuning. `buildSchedule()` emits the same today/tomorrow envelope
+consumed by `Model.js` and the panel.
 
-State uses `$XDG_STATE_HOME` when set and otherwise follows the documented
-`~/.local/state` fallback. OmaPrayers keeps its files in
-`omarchy/io.github.salemsayed.omaprayers`. The directory is forced to mode
-`0700`; files are
-created under a `077` umask. Writes use a same-directory temporary file followed
-by `mv`, and failed publications clean up their staging files. A per-plugin
-`flock` ensures multiple monitors share one network refresh. Stale data is
-served only when its configuration fingerprint matches, it contains both the
-target-local current day and tomorrow, and all mandatory timestamps for those
-days are complete ISO-8601 instants.
+There is no prayer-calendar cache or prayer-time network request. The state
+directory remains only for `prayer-notify.sh`, which stores notification
+deduplication state. City search and Detect keep their separate `curl`
+requests to Open-Meteo and wttr.in.
 
 ## Time model
 
-`Model.js` never constructs prayer timestamps from a bare `HH:mm` value.
-Countdowns, next/current prayer selection, tomorrow rollover, and notification
-crossings all compare ISO-8601 instants. Clock strings are presentation-only.
+`Engine.js` calculates UTC instants, then renders each instant with the offset
+in force from the zone table. `Model.js` never constructs prayer timestamps
+from a bare `HH:mm` value. Countdowns, next/current prayer selection, tomorrow
+rollover, and notification crossings compare ISO-8601 instants. Clock strings
+are presentation-only.
 
 Proportional layout geometry comes from the unit-tested `Model.daySegments`
 and `Model.nightMarkers` helpers. They unwrap boundaries that cross midnight,
@@ -102,7 +113,9 @@ preserve a 24-hour day cycle, and normalize night marks to fractions. Explicit
 strip, night band, and bar mini strip mirror their fraction positions manually.
 
 This keeps a location such as Cairo correct even if the computer is temporarily
-running in another timezone.
+running in another timezone. If polar sunrise or sunset is unavailable, the
+engine tries the nearest valid latitude and then the nearest valid day; the
+panel marks the result as approximate.
 
 ## Notifications
 
@@ -114,6 +127,16 @@ once across monitors. The key is committed only after successful desktop
 delivery. The panel performs two bounded retries for transient failures and
 then exposes a warning instead of retrying forever.
 
+## Validation
+
+The engine is checked against eight published timetable fixtures, seeded
+adhan-js regular and polar fuzz cases, an independent solar calculation, and
+recorded AlAdhan output. The recorded corpus spans all 24 method IDs, 40
+locations, DST, high-latitude rules, Asr schools, tuning and Custom. Expected
+provider differences are listed rather than hidden behind wider tolerances.
+The live AlAdhan drift check is optional and has no runtime role. See
+[Validation](VALIDATION.md).
+
 ## Deliberate omissions
 
 - No audio or remote media downloads.
@@ -124,7 +147,6 @@ then exposes a warning instead of retrying forever.
   fills the search box with it; it cannot commit, because that address is
   regularly wrong by enough to move prayer times.
 - No background daemon or systemd unit.
-- No local astronomical implementation to vendor and independently qualify.
 - No mosque iqama schedules; calculation adjustments cover authority-specific
   minute differences.
 

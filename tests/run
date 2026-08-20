@@ -3,8 +3,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-bash -n prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh
+bash -n prayer-zone.sh prayer-notify.sh tests/Scripts.test.sh tests/EngineQml.test.sh tests/run
 jq -e . manifest.json >/dev/null
+node tests/Engine.test.js
+node tests/Aladhan.test.js
 node tests/Model.test.js
 node --test tests/IpcLifecycle.test.js
 bash tests/Scripts.test.sh
+bash tests/EngineQml.test.sh

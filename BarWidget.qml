@@ -31,7 +31,6 @@ BarWidget {
   readonly property var daySegments: Model.daySegments(todayDay, showSunrise)
   readonly property real dayFraction: Model.fractionOfDay(todayDay, nowTick)
   readonly property int highlightBeforeMinutes: Math.max(0, Number(setting("highlightBeforeMinutes", 15)))
-  readonly property bool stale: schedule && schedule.status === "stale"
   readonly property bool unavailable: !schedule || schedule.ok !== true
   readonly property string displayText: Model.barText(nextPrayer, nowTick, language, barDisplay, timeFormat)
   readonly property bool iconOnly: displayText === "\ueed3"
@@ -149,7 +148,7 @@ BarWidget {
     tooltipText: root.tooltipText
     active: root.prayerSoon
     activeColor: Color.accent
-    dimmed: root.stale || root.unavailable
+    dimmed: root.unavailable
 
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton) root.refresh(true)

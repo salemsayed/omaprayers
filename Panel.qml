@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
+import "Engine.js" as Engine
 import "Model.js" as Model
 
 Panel {
@@ -16,12 +17,11 @@ Panel {
   readonly property var barIdentity: hostWidget || root
 
   property var schedule: null
+  property var zone: null
   property string lastError: ""
   property date nowTick: new Date()
   property double previousTickEpoch: Date.now()
-  property double lastRefreshAttemptEpoch: 0
-  property bool refreshAfterCurrentFetch: false
-  property bool forceAfterCurrentFetch: false
+  property string zoneRequestedTimezone: ""
   property var notificationQueue: []
   property var activeNotification: null
   property int notificationRetryAttempt: 0
@@ -30,6 +30,7 @@ Panel {
   // dropdown popup currently owns the keyboard. Neither belongs in shell.json.
   property bool displaySettingsOpen: false
   property bool keysBlocked: false
+  property var pendingMethodSuggestion: null
 
   // Location picker state. All session-only: nothing here is written until the
   // user picks a row, and then only through commitLocation.
@@ -40,10 +41,8 @@ Panel {
   property bool detectingLocation: false
   readonly property bool searchingLocation: geocodeProcess.running
 
-  readonly property string dataScript: Model.filePath(Qt.resolvedUrl("prayer-data.sh"))
+  readonly property string zoneScript: Model.filePath(Qt.resolvedUrl("prayer-zone.sh"))
   readonly property string notificationScript: Model.filePath(Qt.resolvedUrl("prayer-notify.sh"))
-  readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
-  readonly property string cachePath: stateHome + "/omarchy/io.github.salemsayed.omaprayers/current.json"
 
   readonly property string locationLabel: String(setting("locationLabel", "Cairo"))
   readonly property string locationLabelAr: String(setting("locationLabelAr", ""))
@@ -51,7 +50,8 @@ Panel {
   readonly property string longitude: String(setting("longitude", "31.2357"))
   readonly property string timezone: String(setting("timezone", "Africa/Cairo"))
   readonly property int calculationMethod: Math.round(Model.number(setting("calculationMethod", 5), 5))
-  readonly property int school: Model.bool(setting("hanafi", false)) ? 1 : 0
+  readonly property bool hanafi: Model.bool(setting("hanafi", false))
+  readonly property int school: hanafi ? 1 : 0
   readonly property int latitudeAdjustmentMethod: latitudeRule(String(setting("highLatitudeRule", "Angle based")))
   readonly property int midnightMode: String(setting("midnightMode", "Standard")) === "Jafari" ? 1 : 0
   readonly property string shafaq: shafaqValue(String(setting("shafaq", "General")))
@@ -67,7 +67,6 @@ Panel {
   readonly property bool showSunrise: Model.bool(setting("showSunrise", true))
   readonly property bool showNightMarkers: Model.bool(setting("showNightMarkers", true))
   readonly property int highlightBeforeMinutes: Math.max(0, Math.round(Model.number(setting("highlightBeforeMinutes", 15), 15)))
-  readonly property int refreshHours: Math.max(1, Math.round(Model.number(setting("refreshHours", 24), 24)))
   readonly property bool notificationsEnabled: Model.bool(setting("notifications", false))
   readonly property int notifyBeforeMinutes: Math.max(0, Math.round(Model.number(setting("notifyBeforeMinutes", 10), 10)))
   readonly property int notificationGraceMinutes: Math.max(1, Math.round(Model.number(setting("notificationGraceMinutes", 10), 10)))
@@ -103,14 +102,16 @@ Panel {
   readonly property var daySegments: Model.daySegments(todayDay, showSunrise)
   readonly property var nightBand: showNightMarkers ? Model.nightMarkers(todayDay) : null
   readonly property real dayFraction: Model.fractionOfDay(todayDay, nowTick)
-  readonly property string methodShort: Model.methodShortName(calculationMethod, todayDay ? todayDay.methodName : "")
+  readonly property string methodShort: Model.methodShortName(
+    calculationMethod, todayDay ? todayDay.methodName : "", language
+  )
   readonly property string hijriText: {
     var hijri = Model.hijriLabel(todayDay, language)
     if (!hijri) return ""
     return isArabic ? "\u2068" + hijri + "\u2069" : hijri
   }
-  readonly property string footerText: methodShort + "  \u00b7  " + timezone + "  \u00b7  "
-    + Model.statusLabel(schedule ? schedule.status : "", language)
+  readonly property string footerText: methodShort + "  \u00b7  "
+    + Model.schoolLabel(school, language) + "  \u00b7  " + timezone
   readonly property string tomorrowPrayerText: {
     var prayer = nextPrayer
     var day = todayDay
@@ -122,12 +123,10 @@ Panel {
   readonly property color dim: Util.alpha(foreground, 0.62)
   readonly property color faint: Util.alpha(foreground, 0.42)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
-  readonly property bool fetching: fetchProcess.running
-  readonly property bool stale: schedule && schedule.status === "stale"
   readonly property string statusMessage: {
     if (lastError !== "") return lastError
-    if (stale && schedule.error) return "Offline cache \u00b7 " + schedule.error
-    if (fetching && !schedule) return "Loading prayer calendar..."
+    if (todayDay && todayDay.approximate)
+      return Model.uiLabel("approximate", language)
     if (notificationWarning !== "") return notificationWarning
     return ""
   }
@@ -145,6 +144,7 @@ Panel {
   }
 
   function syncLayout() {
+    root.keysBlocked = false
     var file = root.panelStyle === "Compact" ? "PanelCompact.qml" : "PanelHorizon.qml"
     layoutLoader.setSource(Qt.resolvedUrl(file), { "host": root })
   }
@@ -154,7 +154,7 @@ Panel {
   // writable entry — the widget is not in the layout — it stays a session-only
   // preference rather than doing nothing. The host widget holds its own copy
   // and pushes it back down whenever it changes, so it has to be moved in step
-  // or the next write would go out from a stale one.
+  // or the next write would go out from an outdated one.
   function persistSettings(values) {
     var entry = { id: root.moduleName }
     for (var existing in root.settings) if (existing !== "id") entry[existing] = root.settings[existing]
@@ -250,71 +250,106 @@ Panel {
   // The key catcher owns Tab for switching panels, so the search field would
   // otherwise be mouse-only.
   signal locationSearchRequested()
+  signal methodPickerRequested()
 
   function requestLocationSearch() {
     root.displaySettingsOpen = true
     root.locationSearchRequested()
   }
 
+  function requestMethodPicker() {
+    root.displaySettingsOpen = true
+    root.methodPickerRequested()
+  }
+
   function commitLocation(choice) {
     var values = Model.locationSettings(choice)
     if (!values) return
+    root.pendingMethodSuggestion = null
+    var suggestion = Model.suggestedMethod(choice.countryCode, root.calculationMethod)
+    if (suggestion) {
+      root.pendingMethodSuggestion = {
+        id: suggestion.id,
+        label: suggestion.label,
+        country: String(choice.country || choice.region || choice.name || "")
+      }
+    }
     root.locationChoices = []
     root.locationStatus = ""
     root.geocodePendingQuery = ""
     persistSettings(values)
   }
 
-  function fetchCommand(force) {
-    var command = [
-      root.dataScript,
-      "--latitude", root.latitude,
-      "--longitude", root.longitude,
-      "--timezone", root.timezone,
-      "--location-label", root.locationLabel,
-      "--method", String(root.calculationMethod),
-      "--school", String(root.school),
-      "--latitude-adjustment", String(root.latitudeAdjustmentMethod),
-      "--midnight-mode", String(root.midnightMode),
-      "--hijri-adjustment", String(root.hijriAdjustment),
-      "--tune", root.tune,
-      "--shafaq", root.shafaq,
-      "--method-settings", root.methodSettings,
-      "--refresh-hours", String(root.refreshHours)
-    ]
-    if (force === true) command.push("--force")
-    return command
+  function applySuggestedMethod() {
+    if (!root.pendingMethodSuggestion) return
+    var method = root.pendingMethodSuggestion.id
+    root.pendingMethodSuggestion = null
+    root.setSetting("calculationMethod", method)
   }
 
-  function refresh(force) {
-    if (fetchProcess.running) {
-      refreshAfterCurrentFetch = true
-      if (force === true) forceAfterCurrentFetch = true
-      return
-    }
-    lastRefreshAttemptEpoch = Date.now()
-    fetchProcess.command = fetchCommand(force === true)
-    fetchProcess.running = true
+  function dismissMethodSuggestion() {
+    root.pendingMethodSuggestion = null
   }
 
-  function applyEnvelope(raw) {
+  function applyZone(raw) {
     var value = Model.parseEnvelope(raw)
     if (!value) {
-      lastError = "Prayer data was not valid JSON"
+      lastError = "Timezone data was not valid JSON"
       return
     }
     if (value.ok !== true) {
-      lastError = String(value.error || "Prayer data refresh failed")
+      lastError = String(value.error || "Timezone data refresh failed")
       return
     }
-    if (!Model.sameConfig(value.config, expectedConfig)) return
-    schedule = value
-    lastError = value.status === "stale" ? "" : String(value.error || "")
+    if (String(value.timezone || "") !== root.timezone) {
+      Qt.callLater(function() { root.refresh(false) })
+      return
+    }
+    root.zone = value
+    root.lastError = ""
+  }
+
+  function recompute() {
+    if (!root.zone || root.zone.ok !== true
+        || String(root.zone.timezone || "") !== root.timezone) return
+    var value = Engine.buildSchedule(root.expectedConfig, root.zone, Date.now())
+    if (!value || value.ok !== true) {
+      root.schedule = null
+      root.lastError = String(value && value.error
+        ? value.error
+        : "Prayer schedule calculation failed")
+      root.armZoneRefresh()
+      return
+    }
+    if (!Model.sameConfig(value.config, root.expectedConfig)) return
+    root.schedule = value
+    root.lastError = ""
+    root.armZoneRefresh()
+  }
+
+  function armZoneRefresh() {
+    var now = Date.now()
+    var delay = 86400000
+    var nextMidnight = root.schedule
+      ? new Date(root.schedule.nextRefreshAt || "").getTime()
+      : NaN
+    if (isFinite(nextMidnight) && nextMidnight > now)
+      delay = Math.min(delay, nextMidnight - now)
+    zoneRefresh.interval = Math.max(1000, Math.round(delay))
+    zoneRefresh.restart()
+  }
+
+  function refresh(force) {
+    if (zoneProcess.running) return
+    root.zoneRequestedTimezone = root.timezone
+    zoneProcess.command = [root.zoneScript, "--timezone", root.timezone]
+    zoneProcess.running = true
+    root.armZoneRefresh()
   }
 
   function open() {
     root.controller.show()
-    root.refresh(false)
+    if (!root.schedule) root.recompute()
     Qt.callLater(function() {
       if (root.opened) root.setCenterHoverRevealSuppressed(true)
     })
@@ -352,7 +387,7 @@ Panel {
     var nextText = next
       ? Model.label(next.name, language) + (isArabic ? " بعد " : " in ")
         + Model.remaining(next, nowTick, language)
-      : (isArabic ? "لا توجد صلاة قادمة في النسخة المحفوظة" : "No upcoming prayer in cache")
+      : (isArabic ? "لا توجد صلاة قادمة" : "No upcoming prayer")
     return displayLocation + ": " + nextText + " ["
       + Model.statusLabel(schedule.status, language) + "]"
   }
@@ -410,21 +445,24 @@ Panel {
       ))
     }
 
-    if (!schedule) {
-      if (currentEpoch - lastRefreshAttemptEpoch >= 600000) refresh(false)
-      return
-    }
+    if (!schedule) return
     var nextRefresh = new Date(schedule.nextRefreshAt || "").getTime()
-    var ageDue = Number(schedule.fetchedAtEpoch || 0) + refreshHours * 3600000
-    var due = (isFinite(nextRefresh) && currentEpoch >= nextRefresh) || currentEpoch >= ageDue
-    if (due && currentEpoch - lastRefreshAttemptEpoch >= 600000) refresh(false)
+    if (isFinite(nextRefresh) && currentEpoch >= nextRefresh) {
+      root.recompute()
+      root.refresh(false)
+    }
   }
 
-  onConfigKeyChanged: {
-    schedule = null
-    lastError = ""
-    configRefresh.restart()
+  onConfigKeyChanged: configRefresh.restart()
+
+  onTimezoneChanged: {
+    root.zone = null
+    root.schedule = null
+    root.lastError = ""
+    Qt.callLater(function() { root.refresh(false) })
   }
+
+  onZoneChanged: configRefresh.restart()
 
   onNotificationsEnabledChanged: {
     previousTickEpoch = Date.now()
@@ -444,30 +482,18 @@ Panel {
     syncLayout()
   }
 
-  FileView {
-    id: cacheFile
-    path: root.cachePath
-    watchChanges: true
-    printErrors: false
-    onLoaded: root.applyEnvelope(text())
-    onFileChanged: reload()
-  }
-
   Process {
-    id: fetchProcess
+    id: zoneProcess
     stdout: StdioCollector {
       waitForEnd: true
-      onStreamFinished: root.applyEnvelope(text)
+      onStreamFinished: root.applyZone(text)
     }
     onExited: function(exitCode) {
       if (exitCode !== 0 && root.lastError === "")
-        root.lastError = "Prayer data command failed (exit " + exitCode + ")"
-      if (root.refreshAfterCurrentFetch) {
-        var force = root.forceAfterCurrentFetch
-        root.refreshAfterCurrentFetch = false
-        root.forceAfterCurrentFetch = false
-        Qt.callLater(function() { root.refresh(force) })
-      }
+        root.lastError = "Timezone data command failed (exit " + exitCode + ")"
+      root.armZoneRefresh()
+      if (root.zoneRequestedTimezone !== root.timezone)
+        Qt.callLater(function() { root.refresh(false) })
     }
   }
 
@@ -523,6 +549,12 @@ Panel {
   Timer {
     id: configRefresh
     interval: 250
+    onTriggered: root.recompute()
+  }
+
+  Timer {
+    id: zoneRefresh
+    interval: 86400000
     onTriggered: root.refresh(false)
   }
 
@@ -558,6 +590,7 @@ Panel {
       onTextKey: function(value) {
         var key = String(value).toLowerCase()
         if (key === "r") root.refresh(true)
+        else if (key === "m") root.requestMethodPicker()
         else if (key === "d") root.toggleDisplaySettings()
         else if (key === "s") root.cyclePanelStyle()
         else if (key === "b") root.cycleBarDisplay()
@@ -575,10 +608,10 @@ Panel {
         boundsBehavior: Flickable.StopAtBounds
         interactive: contentHeight > height
 
-        // The search box and its results sit at the bottom of the settings
-        // fold. On screens where the panel hits its height cap they land below
-        // the fold, scrollable but invisible — so scroll them into view when
-        // the search is invoked and when results arrive.
+        // The settings fold sits below the schedule. On screens where the
+        // panel hits its height cap it lands below the fold, scrollable but
+        // invisible — so scroll it into view when it opens, when the search or
+        // the method picker is invoked, and when search results arrive.
         function revealBottom() {
           if (contentHeight > height) contentY = contentHeight - height
         }
@@ -591,6 +624,20 @@ Panel {
           function onLocationSearchRequested() {
             Qt.callLater(panelScroll.revealBottom)
           }
+          function onMethodPickerRequested() {
+            revealTimer.restart()
+          }
+          function onDisplaySettingsOpenChanged() {
+            if (root.displaySettingsOpen) revealTimer.restart()
+          }
+        }
+
+        // The fold reports its height a frame after it becomes visible, so a
+        // reveal on the same tick would measure the old content height.
+        Timer {
+          id: revealTimer
+          interval: 80
+          onTriggered: panelScroll.revealBottom()
         }
 
         Loader {

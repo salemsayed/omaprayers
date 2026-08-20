@@ -1,7 +1,7 @@
 # OmaPrayers
 
 Prayer times in the Omarchy bar: a to-scale day strip or a ruled timetable,
-Arabic and English, an offline cache and optional notifications.
+Arabic and English, offline calculation and optional notifications.
 
 ## Demo
 
@@ -18,7 +18,9 @@ search that resolves a place to its coordinates *and* timezone.
 
 ![Arabic presentation](docs/images/panel-arabic.png)
 
-![Settings with the city search](docs/images/panel-location.png)
+![Settings: city search, calculation method, Asr school and minute tuning](docs/images/panel-location.png)
+
+![The searchable method picker](docs/images/panel-method.png)
 
 Five bar label forms, from name and countdown to a miniature day strip to a
 single glyph:
@@ -34,23 +36,27 @@ single glyph:
   Vertical bars use a rotated text label.
 - English and Arabic names, dates and countdowns; Arabic uses a configurable
   Noto Naskh Arabic face.
-- The current and next month are cached, so the schedule works offline.
+- Prayer times are calculated offline for 24 methods. Choose the method and
+  Shafi or Hanafi Asr from the panel, then tune individual times if needed.
 - Optional prayer-time and advance notifications, deduplicated across
   monitors and shell reloads.
 - Location and presentation are set from the panel. The city search lists
   same-named cities with their region and zone — `Springfield` spans two —
   and applies nothing until you pick one.
+- Picking a city can suggest its regional calculation method. The suggestion
+  is never applied without confirmation.
 
 ## Controls
 
 - Left click toggles the panel; middle click cycles the bar label;
-  right click (or `R`) refreshes online; `Esc` closes; `Tab` switches to
+  right click (or `R`) reloads timezone data; `Esc` closes; `Tab` switches to
   the neighbouring panel.
 
 | Key | Effect |
 |---|---|
 | `D` | Show or hide the settings section |
 | `C` or `/` | Jump to the city search |
+| `M` | Open the calculation-method picker |
 | `S` | Switch the panel layout |
 | `B` | Cycle the bar label |
 | `T` | Switch 24-hour and 12-hour |
@@ -61,10 +67,11 @@ single glyph:
 ## Requirements
 
 - Omarchy 4 (Quattro)
-- `curl` and `jq`
+- Bash, GNU coreutils, `jq` and installed `tzdata`
+- `curl` for city search and the optional Detect button
 - `noto-fonts` for Arabic mode
-- Network access to the [AlAdhan API](https://aladhan.com/prayer-times-api)
-  for the first fetch; the cache covers later offline sessions
+
+Prayer-time calculation does not require network access.
 
 ## Install
 
@@ -78,17 +85,22 @@ if you prefer another spot.
 
 ## Configure
 
-Layout, bar label, clock format, language, sunrise and night markers,
-notifications and the accent lead time are on the panel's settings section.
-Location, calculation method and tuning are configuration-only because they
-invalidate the cache:
+Location, calculation method, Asr school, six tuning values, layout, bar
+label, clock format, language, sunrise and night markers, notifications and
+the accent lead time are on the panel's settings section. Press `M` to open
+the method picker directly.
+
+Use `omarchy bar set` for the same settings and for advanced calculation
+options:
 
 ```bash
 omarchy bar set io.github.salemsayed.omaprayers barDisplay "Icon only"
 omarchy bar set io.github.salemsayed.omaprayers panelStyle "Compact"
 omarchy bar set io.github.salemsayed.omaprayers timeFormat "12-hour"
 omarchy bar set io.github.salemsayed.omaprayers notifications true --json
+omarchy bar set io.github.salemsayed.omaprayers calculationMethod 5 --json
 omarchy bar set io.github.salemsayed.omaprayers hanafi true --json
+omarchy bar set io.github.salemsayed.omaprayers highLatitudeRule "Angle based"
 ```
 
 Change a location as a set — label, coordinates and timezone:
@@ -109,7 +121,7 @@ omarchy plugin disable io.github.salemsayed.omaprayers
 omarchy plugin remove io.github.salemsayed.omaprayers
 ```
 
-The cache is kept so a reinstall needs no fetch. To delete it too:
+Notification deduplication state is kept. To delete it too:
 
 ```bash
 rm -r -- "$HOME/.local/state/omarchy/io.github.salemsayed.omaprayers"
@@ -117,8 +129,12 @@ rm -r -- "$HOME/.local/state/omarchy/io.github.salemsayed.omaprayers"
 
 ## Data sources
 
-Prayer calendars come from [AlAdhan](https://aladhan.com/prayer-times-api),
-calculated for your explicit coordinates, timezone, method and adjustments.
+Prayer times are calculated locally. The astronomy algorithm is ported from
+[adhan-js](https://github.com/batoulapps/adhan-js) and checked against
+published timetables, adhan-js and recorded
+[AlAdhan](https://aladhan.com/prayer-times-api) output; see
+[Validation](docs/VALIDATION.md). AlAdhan is not used at runtime.
+
 The city search uses [Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api);
 the optional *Detect* button reads the connection's apparent city from
 [wttr.in](https://wttr.in) and only fills the search box. Nothing is applied
@@ -126,19 +142,27 @@ until you pick a result.
 
 ## Accuracy
 
-- Explicit latitude, longitude and IANA timezone; the computer's timezone is
-  never assumed to be the prayer location's.
-- Absolute ISO-8601 instants from AlAdhan drive countdowns and notifications.
-- Two months cached atomically, covering tomorrow's Fajr and year boundaries;
-  a stale cache is shown as stale.
-- Calculation method, Shafi/Hanafi Asr, high-latitude rule, midnight mode,
-  Shafaq, Hijri adjustment, custom parameters and all nine tuning offsets.
+Prayer times are calculated offline from explicit latitude, longitude and an
+IANA timezone; the computer's timezone is not assumed. The astronomy
+algorithm is ported from adhan-js. The engine includes 24 methods, including
+Custom, with the built-in minute adjustments and fixed intervals listed in
+[Validation](docs/VALIDATION.md).
+
+Validation covers eight official timetable fixtures (462 rows, all within
+their published variance), a seeded adhan-js comparison (3,000 regular and
+300 polar cases, exact to the second), and a recorded AlAdhan corpus of 60
+snapshots across 40 cities: 1,723 days and 18,953 timing cells compared, every
+residual within one minute after the documented method differences, 122
+polar days where AlAdhan returns invalid output skipped, and 36 Umm al-Qura
+Hijri dates matched exactly.
 
 Calculated times are not mosque iqama schedules. Choose the method used by
-the nearest authority, compare with a trusted local calendar, and use the
-tuning fields if needed. Defaults: Cairo, method 5 (Egyptian General
-Authority of Survey), standard Asr, 24-hour, English, Horizon, notifications
-off.
+the nearest authority, select the local Asr school, compare with a trusted
+local calendar, then adjust Fajr, Sunrise, Dhuhr, Asr, Maghrib or Isha in the
+panel. Imsak, Sunset and Midnight tuning and the high-latitude, midnight,
+Shafaq, Hijri and Custom options remain available through configuration.
+Defaults: Cairo, method 5 (Egyptian General Authority of Survey), Shafi Asr,
+24-hour, English, Horizon, notifications off.
 
 ## License
 

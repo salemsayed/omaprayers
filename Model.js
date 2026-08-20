@@ -1,12 +1,21 @@
+.import "Engine.js" as Engine
+
+var EngineRef = typeof Engine !== "undefined" ? Engine : require("./Engine.js")
+var METHODS = EngineRef.METHODS
 var PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 var DAY_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
 var NIGHT_ORDER = ["Imsak", "Midnight", "Firstthird", "Lastthird"]
+var TUNE_ORDER = [
+  "Imsak", "Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Sunset", "Isha", "Midnight"
+]
+var TUNE_EDITABLE = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
 var ARABIC_NAMES = {
   Fajr: "\u0627\u0644\u0641\u062c\u0631",
   Sunrise: "\u0627\u0644\u0634\u0631\u0648\u0642",
   Dhuhr: "\u0627\u0644\u0638\u0647\u0631",
   Asr: "\u0627\u0644\u0639\u0635\u0631",
+  Sunset: "\u0627\u0644\u063a\u0631\u0648\u0628",
   Maghrib: "\u0627\u0644\u0645\u063a\u0631\u0628",
   Isha: "\u0627\u0644\u0639\u0634\u0627\u0621",
   Imsak: "\u0627\u0644\u0625\u0645\u0633\u0627\u0643",
@@ -20,6 +29,7 @@ var ENGLISH_NAMES = {
   Sunrise: "Sunrise",
   Dhuhr: "Dhuhr",
   Asr: "Asr",
+  Sunset: "Sunset",
   Maghrib: "Maghrib",
   Isha: "Isha",
   Imsak: "Imsak",
@@ -34,6 +44,7 @@ var ENGLISH_NAMES = {
 var PANEL_STYLES = ["Horizon", "Compact"]
 var TIME_FORMATS = ["24-hour", "12-hour"]
 var LANGUAGES = ["English", "Arabic"]
+var SCHOOLS = ["Shafi", "Hanafi"]
 var BAR_DISPLAYS = [
   "Strip + countdown", "Icon only", "Name + countdown", "Name + time",
   "Countdown only"
@@ -51,6 +62,20 @@ var UI_LABELS = {
   searchFailed: ["City search failed", "فشل البحث عن المدينة"],
   detectFailed: ["Could not detect a location", "تعذر تحديد الموقع"],
   detectHint: ["Detected from your connection — confirm it", "محدد من اتصالك — تأكيده"],
+  calculation: ["Calculation", "الحساب"],
+  method: ["Method", "طريقة الحساب"],
+  asr: ["Asr", "العصر"],
+  tuning: ["Adjust minutes", "تعديل الدقائق"],
+  reset: ["Reset", "إعادة ضبط"],
+  edit: ["Edit", "تعديل"],
+  done: ["Done", "تم"],
+  none: ["None", "لا شيء"],
+  suggested: ["Suggested for", "المقترح لـ"],
+  apply: ["Apply", "تطبيق"],
+  dismiss: ["Dismiss", "تجاهل"],
+  approximate: ["High-latitude approximation: nearest valid latitude used", "تقريب للمناطق القطبية: استُخدم أقرب خط عرض صالح"],
+  searchMethod: ["Search methods", "ابحث عن طريقة"],
+  noMethod: ["No matching method", "لا توجد طريقة مطابقة"],
   display: ["Display", "العرض"],
   layout: ["Layout", "التصميم"],
   clock: ["Clock", "الساعة"],
@@ -75,6 +100,8 @@ var OPTION_LABELS = {
   "12-hour": ["12h", "12h"],
   English: ["English", "إنجليزي"],
   Arabic: ["Arabic", "عربي"],
+  Shafi: ["Shafi", "شافعي"],
+  Hanafi: ["Hanafi", "حنفي"],
   "Strip + countdown": ["Strip", "شريط"],
   "Icon only": ["Icon", "أيقونة"],
   "Name + countdown": ["Name + left", "الاسم والمتبقي"],
@@ -161,6 +188,98 @@ function optionModel(ring, language) {
   return out
 }
 
+function methodLabel(id, language) {
+  var method = EngineRef.methodById(id)
+  if (!method) return text(id)
+  return text(language) === "Arabic" ? method.name[1] : method.name[0]
+}
+
+function decimalText(value) {
+  var numberValue = Number(value)
+  if (!isFinite(numberValue)) return "0"
+  return String(numberValue)
+}
+
+function methodValueText(name, value, minutes, language) {
+  var prefix = label(name, language) + " "
+  if (minutes > 0)
+    return prefix + decimalText(minutes) + (text(language) === "Arabic" ? " د" : " min")
+  return prefix + decimalText(value) + "°"
+}
+
+function methodDescription(method, language, methodSettings) {
+  var params = method.id === 99
+    ? EngineRef.methodParameters({ method: 99, methodSettings: methodSettings })
+    : method
+  var parts = [methodValueText("Fajr", params.fajr, 0, language)]
+  if (method.id === 99) {
+    if (params.maghrib > 0)
+      parts.push(methodValueText("Maghrib", params.maghrib, 0, language))
+    else
+      parts.push(label("Maghrib", language) + " "
+        + (text(language) === "Arabic" ? "الغروب" : "sunset"))
+  } else if (params.maghribMinutes > 0) {
+    parts.push(methodValueText("Maghrib", 0, params.maghribMinutes, language))
+  } else if (params.maghrib > 0) {
+    parts.push(methodValueText("Maghrib", params.maghrib, 0, language))
+  }
+  parts.push(methodValueText("Isha", params.isha, params.ishaMinutes, language))
+  return parts.join(" · ")
+}
+
+function methodOptions(language, methodSettings) {
+  var out = []
+  for (var i = 0; i < METHODS.length; i++) {
+    out.push({
+      value: String(METHODS[i].id),
+      label: methodLabel(METHODS[i].id, language),
+      description: methodDescription(METHODS[i], language, methodSettings)
+    })
+  }
+  return out
+}
+
+function suggestedMethod(countryCode, currentMethod) {
+  var country = text(countryCode).toUpperCase()
+  if (country === "") return null
+  for (var i = 0; i < METHODS.length; i++) {
+    if (METHODS[i].regions.indexOf(country) !== -1) {
+      if (Number(currentMethod) === METHODS[i].id) return null
+      return { id: METHODS[i].id, label: METHODS[i].name[0] }
+    }
+  }
+  return null
+}
+
+function tuneValues(value) {
+  var source = value instanceof Array ? value : text(value).split(",")
+  var out = []
+  for (var i = 0; i < TUNE_ORDER.length; i++) {
+    var parsed = Number(source[i])
+    out.push(isFinite(parsed) ? Math.round(parsed) : 0)
+  }
+  return out
+}
+
+function tuneText(values) {
+  return tuneValues(values).join(",")
+}
+
+function tuneSummary(values, language) {
+  var normalized = tuneValues(values)
+  var parts = []
+  for (var i = 0; i < TUNE_ORDER.length; i++) {
+    if (normalized[i] === 0) continue
+    var amount = normalized[i] > 0 ? "+" + normalized[i] : "−" + Math.abs(normalized[i])
+    parts.push(label(TUNE_ORDER[i], language) + " " + amount)
+  }
+  return parts.join(" · ")
+}
+
+function schoolLabel(school, language) {
+  return optionLabel(Number(school) === 1 || text(school) === "Hanafi" ? "Hanafi" : "Shafi", language)
+}
+
 // Open-Meteo geocoding response to a list of choices. The timezone is why this
 // endpoint is used at all: prayer times are computed against an absolute zone,
 // and deriving one from coordinates would be a silent correctness risk. A
@@ -184,6 +303,8 @@ function parseLocationResults(raw) {
     out.push({
       name: text(result.name),
       region: region,
+      country: text(result.country),
+      countryCode: text(result.country_code).toUpperCase(),
       latitude: latitude,
       longitude: longitude,
       timezone: text(result.timezone)
@@ -203,8 +324,8 @@ function detectedLocationQuery(raw) {
 }
 
 // The four location keys are written as one unit. A partial write would leave
-// the timezone describing a different place than the coordinates, which is the
-// one inconsistency the cache fingerprint cannot detect. locationLabelAr is
+// the timezone describing a different place than the coordinates.
+// locationLabelAr is
 // cleared because an Arabic label kept from the previous city would name the
 // wrong place; the panel falls back to locationLabel when it is empty.
 function locationSettings(choice) {
@@ -345,15 +466,9 @@ function formatDuration(minutes, language) {
   return hours + hourUnit + " " + rest + minuteUnit
 }
 
-function methodShortName(methodId, fallbackName) {
-  var names = {
-    0: "JAFARI", 1: "UISK", 2: "ISNA", 3: "MWL", 4: "UMQ", 5: "EGAS",
-    7: "TEHRAN", 8: "GULF", 9: "KUWAIT", 10: "QATAR", 11: "MUIS",
-    12: "UOIF", 13: "DIYANET", 14: "SAMR", 15: "MOONSIGHT", 16: "DUBAI",
-    17: "JAKIM", 18: "TUNISIA", 19: "ALGERIA", 20: "KEMENAG",
-    21: "MOROCCO", 22: "LISBOA", 23: "JORDAN", 99: "CUSTOM"
-  }
-  if (names[methodId] !== undefined) return names[methodId]
+function methodShortName(methodId, fallbackName, language) {
+  var method = EngineRef.methodById(methodId)
+  if (method) return text(language) === "Arabic" ? method.short[1] : method.short[0]
   var words = text(fallbackName).match(/[A-Za-z0-9]+/g) || []
   var acronym = ""
   for (var i = 0; i < words.length && acronym.length < 5; i++) {
@@ -390,15 +505,12 @@ function tooltip(schedule, next, now, language, timeFormat, locationOverride) {
   var location = text(locationOverride)
   if (!location && schedule && schedule.config) location = text(schedule.config.locationLabel)
   var prefix = location ? location + " \u00b7 " : ""
-  var stale = schedule && schedule.status === "stale"
-    ? " \u00b7 " + (arabic ? statusLabel("stale", language) : "stale cache")
-    : ""
   var prayerDay = dayForDate(schedule, next.date) || next.day
   var methodName = prayerDay ? text(prayerDay.methodName) : ""
   var method = methodName ? " \u00b7 " + methodName : ""
   return prefix + label(next.name, language) + (arabic ? " بعد " : " in ")
     + remaining(next, now, language)
-    + " (" + formatClock(next.time, timeFormat) + ")" + stale + method
+    + " (" + formatClock(next.time, timeFormat) + ")" + method
 }
 
 function dayRows(day, showSunrise) {
@@ -498,14 +610,10 @@ function hijriLabel(day, language) {
 
 function statusLabel(status, language) {
   if (text(language) === "Arabic") {
-    if (status === "fresh") return "بيانات محدثة"
-    if (status === "cached") return "بيانات محفوظة"
-    if (status === "stale") return "نسخة محفوظة دون اتصال"
+    if (status === "local") return "محسوبة دون اتصال"
     return "غير محمل"
   }
-  if (status === "fresh") return "online data"
-  if (status === "cached") return "saved data"
-  if (status === "stale") return "offline cache"
+  if (status === "local") return "calculated offline"
   return "not loaded"
 }
 
@@ -582,6 +690,7 @@ function filePath(url) {
 
 if (typeof module !== "undefined") {
   module.exports = {
+    METHODS: METHODS,
     PRAYERS: PRAYERS,
     DAY_ORDER: DAY_ORDER,
     NIGHT_ORDER: NIGHT_ORDER,
@@ -589,6 +698,9 @@ if (typeof module !== "undefined") {
     TIME_FORMATS: TIME_FORMATS,
     LANGUAGES: LANGUAGES,
     BAR_DISPLAYS: BAR_DISPLAYS,
+    SCHOOLS: SCHOOLS,
+    TUNE_ORDER: TUNE_ORDER,
+    TUNE_EDITABLE: TUNE_EDITABLE,
     parseEnvelope: parseEnvelope,
     latinDigits: latinDigits,
     sameConfig: sameConfig,
@@ -596,6 +708,13 @@ if (typeof module !== "undefined") {
     uiLabel: uiLabel,
     optionLabel: optionLabel,
     optionModel: optionModel,
+    methodOptions: methodOptions,
+    methodLabel: methodLabel,
+    suggestedMethod: suggestedMethod,
+    tuneValues: tuneValues,
+    tuneText: tuneText,
+    tuneSummary: tuneSummary,
+    schoolLabel: schoolLabel,
     nextInRing: nextInRing,
     parseLocationResults: parseLocationResults,
     detectedLocationQuery: detectedLocationQuery,
