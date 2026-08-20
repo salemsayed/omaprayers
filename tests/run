@@ -6,4 +6,5 @@ cd "$(dirname "$0")/.."
 bash -n prayer-data.sh prayer-notify.sh tests/Scripts.test.sh tests/fake-curl.sh
 jq -e . manifest.json >/dev/null
 node tests/Model.test.js
+node --test tests/IpcLifecycle.test.js
 bash tests/Scripts.test.sh
