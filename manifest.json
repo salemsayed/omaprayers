@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.salemsayed.omaprayers",
   "name": "OmaPrayers",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "author": "Salem Sayed",
   "license": "MIT",
   "description": "Prayer times in the Omarchy bar: a to-scale day strip or a ruled timetable, Arabic and English, offline cache and notifications.",

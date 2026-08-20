@@ -543,7 +543,7 @@ Panel {
     centerOnBar: true
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(360))
-    contentHeight: panel.fittedContentHeight(layoutLoader.height, Style.space(620))
+    contentHeight: panel.fittedContentHeight(layoutLoader.height, Style.space(800))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -574,6 +574,24 @@ Panel {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         interactive: contentHeight > height
+
+        // The search box and its results sit at the bottom of the settings
+        // fold. On screens where the panel hits its height cap they land below
+        // the fold, scrollable but invisible — so scroll them into view when
+        // the search is invoked and when results arrive.
+        function revealBottom() {
+          if (contentHeight > height) contentY = contentHeight - height
+        }
+
+        Connections {
+          target: root
+          function onLocationChoicesChanged() {
+            if (root.locationChoices.length > 0) Qt.callLater(panelScroll.revealBottom)
+          }
+          function onLocationSearchRequested() {
+            Qt.callLater(panelScroll.revealBottom)
+          }
+        }
 
         Loader {
           id: layoutLoader
