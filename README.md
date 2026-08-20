@@ -3,6 +3,15 @@
 Prayer times for the Omarchy bar, with two native panel layouts, Arabic and
 English presentation, offline caching, and optional notifications.
 
+## Demo
+
+![OmaPrayers demo: the Compact timetable, the to-scale Horizon layout, the Arabic presentation, and the in-panel settings with the city search resolving Springfield to its timezone — driven entirely from the keyboard](docs/images/demo.gif)
+
+Everything in the demo is driven from the keyboard on a live Omarchy desktop:
+`S` morphs between the two layouts, `A` switches to Arabic, and the settings
+gear opens the city search, which resolves a place to coordinates and its
+IANA timezone before anything is applied.
+
 ## Screenshots
 
 ![OmaPrayers Horizon panel showing a prayer day drawn to scale](docs/images/panel-horizon.png)
@@ -10,6 +19,13 @@ English presentation, offline caching, and optional notifications.
 ![OmaPrayers Compact panel showing the ruled timetable layout](docs/images/panel-compact.png)
 
 ![OmaPrayers panel rendered in Arabic with Noto Naskh Arabic](docs/images/panel-arabic.png)
+
+![OmaPrayers settings section with the city search resolving a place to coordinates and timezone](docs/images/panel-location.png)
+
+The bar label cycles through five forms, from a full name-and-countdown to a
+miniature to-scale day strip to a single glyph:
+
+![The five OmaPrayers bar label forms](docs/images/bar-forms.png)
 
 ## What it does
 
