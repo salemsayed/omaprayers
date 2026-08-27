@@ -66,6 +66,7 @@ Panel {
   readonly property bool isArabic: language === "Arabic"
   readonly property bool showSunrise: Model.bool(setting("showSunrise", true))
   readonly property bool showNightMarkers: Model.bool(setting("showNightMarkers", true))
+  readonly property bool centerOnBar: Model.bool(setting("centerOnBar", true))
   readonly property int highlightBeforeMinutes: Math.max(0, Math.round(Model.number(setting("highlightBeforeMinutes", 15), 15)))
   readonly property bool notificationsEnabled: Model.bool(setting("notifications", false))
   readonly property int notifyBeforeMinutes: Math.max(0, Math.round(Model.number(setting("notifyBeforeMinutes", 10), 10)))
@@ -572,7 +573,7 @@ Panel {
     owner: root.barIdentity
     bar: root.bar
     open: root.opened
-    centerOnBar: true
+    centerOnBar: root.centerOnBar
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(360))
     contentHeight: panel.fittedContentHeight(layoutLoader.height, Style.space(800))
