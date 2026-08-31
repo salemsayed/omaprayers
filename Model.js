@@ -56,7 +56,9 @@ var BAR_DISPLAYS = [
 var UI_LABELS = {
   location: ["Location", "الموقع"],
   detect: ["Detect", "تحديد"],
+  detectPrivacy: ["Detect asks wttr.in for an approximate city using your IP.", "يطلب تحديد الموقع مدينة تقريبية من wttr.in باستخدام عنوان IP الخاص بك."],
   citySearch: ["Search for a city", "ابحث عن مدينة"],
+  citySearchPrivacy: ["City search sends your text to Open-Meteo.", "يرسل بحث المدينة النص الذي تكتبه إلى Open-Meteo."],
   searching: ["Searching…", "جاري البحث…"],
   noMatches: ["No matching city", "لا توجد مدينة مطابقة"],
   searchFailed: ["City search failed", "فشل البحث عن المدينة"],

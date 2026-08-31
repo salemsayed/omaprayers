@@ -23,7 +23,8 @@ shellcheck prayer-zone.sh prayer-notify.sh tests/*.sh tests/run
   cleanup, notification deduplication and delivery retries;
 - a Quickshell probe that imports and runs `Engine.js` through QML.
 
-There is no CI; run the suite before publishing.
+CI validates the manifest against current Omarchy Quattro and runs
+`tests/run`; run the same local suite before publishing.
 
 Optional QML lint (the shell's modules must be reachable as `qs`):
 

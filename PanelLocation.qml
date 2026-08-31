@@ -83,6 +83,15 @@ Column {
     }
   }
 
+  Text {
+    width: parent.width
+    text: Model.uiLabel("detectPrivacy", locationRoot.host.language)
+    color: locationRoot.host.faint
+    font.family: locationRoot.host.nameFontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
+  }
+
   Item {
     id: suggestionRow
 
@@ -164,6 +173,15 @@ Column {
       cityField.focus = false
       event.accepted = true
     }
+  }
+
+  Text {
+    width: parent.width
+    text: Model.uiLabel("citySearchPrivacy", locationRoot.host.language)
+    color: locationRoot.host.faint
+    font.family: locationRoot.host.nameFontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
   }
 
   Text {

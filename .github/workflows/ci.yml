@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  OMARCHY_VALIDATOR_COMMIT: b686ed892d9c3020c3336203f6d34cc75b544e2b
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Install test tools
+        run: sudo apt-get update && sudo apt-get install --yes jq
+      - name: Check against reviewed Quattro manifest validator
+        run: |
+          git init "$RUNNER_TEMP/omarchy"
+          git -C "$RUNNER_TEMP/omarchy" remote add origin https://github.com/basecamp/omarchy.git
+          git -C "$RUNNER_TEMP/omarchy" fetch --depth 1 origin "$OMARCHY_VALIDATOR_COMMIT"
+          git -C "$RUNNER_TEMP/omarchy" checkout --detach FETCH_HEAD
+          "$RUNNER_TEMP/omarchy/bin/omarchy-plugin-validate" .
+      - name: Run isolated tests
+        run: tests/run
