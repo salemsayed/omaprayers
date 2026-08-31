@@ -157,6 +157,7 @@ BarWidget {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: horizontalLabel
 
       visible: root.horizontalTextMode
@@ -223,6 +224,7 @@ BarWidget {
       }
 
       Text {
+        textFormat: Text.PlainText
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: root.isArabic ? Style.space(2) : Style.space(1)
         text: Model.remaining(root.nextPrayer, root.nowTick, root.language)

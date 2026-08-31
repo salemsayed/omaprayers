@@ -54,6 +54,7 @@ Column {
     height: Math.max(currentLocation.implicitHeight, detectButton.height)
 
     Text {
+      textFormat: Text.PlainText
       id: currentLocation
       anchors.left: parent.left
       anchors.right: detectButton.left
@@ -84,6 +85,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     width: parent.width
     text: Model.uiLabel("detectPrivacy", locationRoot.host.language)
     color: locationRoot.host.faint
@@ -100,6 +102,7 @@ Column {
     height: visible ? Math.max(suggestionText.implicitHeight, suggestionButtons.implicitHeight) : 0
 
     Text {
+      textFormat: Text.PlainText
       id: suggestionText
       anchors.left: parent.left
       anchors.right: suggestionButtons.left
@@ -176,6 +179,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     width: parent.width
     text: Model.uiLabel("citySearchPrivacy", locationRoot.host.language)
     color: locationRoot.host.faint
@@ -185,6 +189,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     visible: text !== ""
     width: parent.width
     text: locationRoot.host.searchingLocation
@@ -218,6 +223,7 @@ Column {
           : "transparent"
 
         Text {
+          textFormat: Text.PlainText
           id: choiceName
           anchors.left: parent.left
           anchors.leftMargin: Style.space(6)
@@ -233,6 +239,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           anchors.left: choiceName.left
           anchors.right: choiceName.right
           anchors.top: choiceName.bottom
@@ -246,6 +253,7 @@ Column {
         // The zone is shown because it is the part the user cannot infer from
         // the name, and two same-named cities can sit in different zones.
         Text {
+          textFormat: Text.PlainText
           id: choiceZone
           anchors.right: parent.right
           anchors.rightMargin: Style.space(6)

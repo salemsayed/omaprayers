@@ -35,6 +35,7 @@ Column {
     height: Math.max(locationText.implicitHeight, shortDateText.implicitHeight)
 
     Text {
+      textFormat: Text.PlainText
       id: locationText
       anchors.left: parent.left
       anchors.right: shortDateText.left
@@ -50,6 +51,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: shortDateText
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
@@ -72,6 +74,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     visible: host.hijriText !== ""
     width: parent.width
     text: host.hijriText
@@ -152,6 +155,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: prayerName
           anchors.left: prayerGutter.right
           anchors.baseline: prayerTime.baseline
@@ -174,6 +178,7 @@ Column {
           clip: true
 
           Text {
+            textFormat: Text.PlainText
             anchors.verticalCenter: parent.verticalCenter
             anchors.verticalCenterOffset: Style.space(4)
             text: compactRoot.leaderDots
@@ -187,6 +192,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: prayerTime
           anchors.right: countdownChip.visible ? countdownChip.left : parent.right
           anchors.rightMargin: countdownChip.visible ? Style.space(5) : 0
@@ -209,6 +215,7 @@ Column {
           color: Util.alpha(Color.accent, 0.17)
 
           Text {
+            textFormat: Text.PlainText
             id: countdownText
             anchors.centerIn: parent
             text: Model.remaining(host.nextPrayer, host.nowTick, host.language)
@@ -245,6 +252,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: tomorrowTag
       anchors.left: tomorrowGutter.right
       anchors.baseline: tomorrowTime.baseline
@@ -256,6 +264,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: tomorrowName
       anchors.left: tomorrowTag.right
       anchors.leftMargin: Style.space(6)
@@ -279,6 +288,7 @@ Column {
       clip: true
 
       Text {
+        textFormat: Text.PlainText
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: Style.space(4)
         text: compactRoot.leaderDots
@@ -290,6 +300,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: tomorrowTime
       anchors.right: tomorrowCountdown.left
       anchors.rightMargin: Style.space(5)
@@ -311,6 +322,7 @@ Column {
       color: Util.alpha(Color.accent, 0.17)
 
       Text {
+        textFormat: Text.PlainText
         id: tomorrowCountdownText
         anchors.centerIn: parent
         text: host.nextPrayer
@@ -325,6 +337,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     visible: host.statusMessage !== ""
     width: parent.width
     text: host.statusMessage
@@ -362,6 +375,7 @@ Column {
         height: Math.max(nightName.implicitHeight, nightTime.implicitHeight)
 
         Text {
+          textFormat: Text.PlainText
           id: nightName
           anchors.left: parent.left
           anchors.right: nightTime.left
@@ -375,6 +389,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: nightTime
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter

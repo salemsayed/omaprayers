@@ -115,6 +115,7 @@ Column {
       : "transparent"
 
     Text {
+      textFormat: Text.PlainText
       anchors.centerIn: parent
       text: cycleButton.glyph
       color: cycleMouse.containsMouse
@@ -143,6 +144,7 @@ Column {
   // whole row component: a component that wrapped both label and control would
   // need a default property alias, and that would swallow the label too.
   component RowLabel: Text {
+    textFormat: Text.PlainText
     color: displayRoot.host.dim
     font.family: displayRoot.host.nameFontFamily
     font.pixelSize: Style.font.bodySmall
@@ -168,6 +170,7 @@ Column {
     height: Math.max(footerLabel.implicitHeight, footerButtons.implicitHeight)
 
     Text {
+      textFormat: Text.PlainText
       id: footerLabel
       anchors.left: parent.left
       anchors.right: footerButtons.left
@@ -224,6 +227,7 @@ Column {
     // likely needs, and it stays visually apart from the calculation controls
     // whose defaults it may suggest.
     PanelSectionHeader {
+      textFormat: Text.PlainText
       text: Model.uiLabel("location", displayRoot.host.language)
       foreground: displayRoot.host.foreground
       fontFamily: displayRoot.host.nameFontFamily
@@ -237,6 +241,7 @@ Column {
     Item { width: 1; height: Style.space(6) }
 
     PanelSectionHeader {
+      textFormat: Text.PlainText
       text: Model.uiLabel("calculation", displayRoot.host.language)
       foreground: displayRoot.host.foreground
       fontFamily: displayRoot.host.nameFontFamily
@@ -319,6 +324,7 @@ Column {
         spacing: Style.space(6)
 
         Text {
+          textFormat: Text.PlainText
           anchors.verticalCenter: parent.verticalCenter
           width: Math.min(implicitWidth, Style.space(142))
           text: displayRoot.currentTuneSummary !== ""
@@ -454,6 +460,7 @@ Column {
     Item { width: 1; height: Style.space(4) }
 
     PanelSectionHeader {
+      textFormat: Text.PlainText
       text: Model.uiLabel("display", displayRoot.host.language)
       foreground: displayRoot.host.foreground
       fontFamily: displayRoot.host.nameFontFamily
@@ -549,7 +556,7 @@ Column {
         showLabel: false
         fontFamily: displayRoot.host.nameFontFamily
         options: Model.optionModel(Model.BAR_DISPLAYS, displayRoot.host.language)
-        value: displayRoot.host.barDisplay
+        value: Model.valueInRing(Model.BAR_DISPLAYS, displayRoot.host.barDisplay)
         onChanged: function(next) { displayRoot.host.setSetting("barDisplay", next) }
         onPopupOpenChanged: displayRoot.host.keysBlocked = popupOpen
       }
@@ -654,6 +661,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           anchors.verticalCenter: parent.verticalCenter
           width: Style.space(46)
           text: accentSlider.liveValue <= 0

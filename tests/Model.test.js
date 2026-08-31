@@ -340,6 +340,25 @@ test("tooltip appends the full calculation method from the prayer day", () => {
     "القاهرة · الظهر بعد 5 د (13:00) · Egyptian General Authority of Survey")
 })
 
+test("the inherited Omarchy bar tooltip cannot interpret network labels as markup", () => {
+  const now = new Date("2026-08-14T12:55:00+03:00")
+  const withMarkup = {
+    ...schedule,
+    days: schedule.days.map(entry => entry.date === schedule.today
+      ? { ...entry, methodName: "<i>Remote method</i>" }
+      : entry)
+  }
+  const next = Model.nextPrayer(withMarkup, now)
+  const tooltip = Model.tooltip(
+    withMarkup, next, now, "English", "24-hour", "<b>Remote city</b>"
+  )
+  assert.equal(
+    tooltip,
+    "‹b›Remote city‹/b› · Dhuhr in 5m (13:00) · ‹i›Remote method‹/i›"
+  )
+  assert.doesNotMatch(tooltip, /[<>]/)
+})
+
 test("method options follow catalog order and keep string values", () => {
   const options = Model.methodOptions("English")
   assert.deepEqual(options.map(option => option.value), [
@@ -429,6 +448,12 @@ test("an unknown or empty current value cycles to the first option", () => {
   assert.equal(Model.nextInRing(Model.PANEL_STYLES, undefined), "Horizon")
   assert.equal(Model.nextInRing([], "Horizon"), "")
   assert.equal(Model.nextInRing(null, "Horizon"), "")
+})
+
+test("inherited dropdowns never render a raw setting outside their fixed ring", () => {
+  assert.equal(Model.valueInRing(Model.BAR_DISPLAYS, "Countdown only"), "Countdown only")
+  assert.equal(Model.valueInRing(Model.BAR_DISPLAYS, "<b>custom</b>"), "Strip + countdown")
+  assert.equal(Model.valueInRing([], "<b>custom</b>"), "")
 })
 
 test("every ring value carries a label in both languages", () => {

@@ -52,6 +52,7 @@ Column {
     spacing: Style.space(4)
 
     Text {
+      textFormat: Text.PlainText
       text: Model.label(parent.markerName, horizonRoot.host.language)
       color: horizonRoot.host.faint
       font.family: horizonRoot.host.nameFontFamily
@@ -59,6 +60,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       visible: parent.includeClock && parent.markerTiming !== null
       text: parent.markerTiming
         ? Model.formatClock(parent.markerTiming.time, horizonRoot.host.timeFormat)
@@ -82,6 +84,7 @@ Column {
       spacing: Style.space(3)
 
       Text {
+        textFormat: Text.PlainText
         width: parent.width
         text: {
           var label = host.isArabic ? "التالي" : "NEXT"
@@ -102,6 +105,7 @@ Column {
         spacing: Style.space(8)
 
         Text {
+          textFormat: Text.PlainText
           id: heroPrayerName
           width: Math.min(implicitWidth,
             parent.width - heroClock.implicitWidth - parent.spacing)
@@ -116,6 +120,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: heroClock
           text: host.nextPrayer
             ? Model.formatClock(host.nextPrayer.time, host.timeFormat)
@@ -128,6 +133,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: countdownText
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
@@ -207,6 +213,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           visible: stripSegment.width > Style.space(host.isArabic ? 52 : 46)
           anchors.left: parent.left
           anchors.leftMargin: Style.space(5)
@@ -255,6 +262,7 @@ Column {
     height: visible ? Math.max(scaleStart.implicitHeight, scaleTitle.implicitHeight) : 0
 
     Text {
+      textFormat: Text.PlainText
       id: scaleStart
       anchors.left: parent.left
       anchors.verticalCenter: parent.verticalCenter
@@ -267,6 +275,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       id: scaleTitle
       anchors.centerIn: parent
       text: host.isArabic ? "طول النوافذ" : "WINDOW LENGTHS"
@@ -277,6 +286,7 @@ Column {
     }
 
     Text {
+      textFormat: Text.PlainText
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
       text: scaleStart.text
@@ -287,6 +297,7 @@ Column {
   }
 
   Text {
+    textFormat: Text.PlainText
     visible: host.statusMessage !== ""
     width: parent.width
     text: host.statusMessage
@@ -340,6 +351,7 @@ Column {
           anchors.bottom: parent.bottom
 
           Text {
+            textFormat: Text.PlainText
             id: tableName
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
@@ -355,6 +367,7 @@ Column {
           }
 
           Text {
+            textFormat: Text.PlainText
             id: imsakName
             visible: tableRow.imsakTiming !== null
             anchors.left: tableName.right
@@ -368,6 +381,7 @@ Column {
           }
 
           Text {
+            textFormat: Text.PlainText
             id: imsakClock
             visible: tableRow.imsakTiming !== null
             anchors.left: imsakName.right
@@ -383,6 +397,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: tableClock
           anchors.right: windowSlot.left
           anchors.rightMargin: Style.space(9)
@@ -423,6 +438,7 @@ Column {
         }
 
         Text {
+          textFormat: Text.PlainText
           id: tableDuration
           anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter

@@ -1,5 +1,32 @@
 # OmaPrayers VM test report
 
+## Omarchy 4.0.1 compatibility rerun
+
+Test date: 2026-08-31 (`Africa/Cairo`)
+
+OmaPrayers 2.3.2 was retested in its own disposable QEMU/KVM overlay with the
+official `omarchy 4.0.1-1` and `omarchy-settings 4.0.1-1` packages.
+
+- The exact v4.0.1 validator accepted both the source and installed trees.
+- The complete engine, AlAdhan snapshot, model, IPC, shell, and QML parity
+  suites passed: 462 engine fixture rows, 3,300 fuzz rows, 1,723 AlAdhan days,
+  and 18,953 reference timing comparisons were included.
+- `qmllint` returned success against `/usr/share/omarchy/shell`; the plugin
+  installed, enabled, exposed status/open/close IPC, and produced no plugin
+  runtime errors in the shell log.
+- All 46 plugin `Text` types and three inherited section headers explicitly
+  used `Text.PlainText`, so network-derived location, Hijri, status, and prayer
+  strings cannot activate the shell's automatic rich-text rendering.
+- Network/user location and method labels are additionally neutralized before
+  Omarchy 4.0.1's inherited bar tooltip, and an unmatched hand-edited
+  `barDisplay` value is constrained before the inherited dropdown renders it.
+- No normal-state pixels changed; the presentation guards only alter
+  interpretation of markup-shaped external strings, so the already-sanitized
+  visual set was not replaced.
+
+The broader network, failure, calculation, placement, and presentation run
+below remains valid and was not repeated with personal or live location data.
+
 Test dates: 2026-08-14 through 2026-08-15 (`Africa/Cairo`)
 
 ## Environment and isolation

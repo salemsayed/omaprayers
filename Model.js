@@ -353,6 +353,14 @@ function nextInRing(ring, current) {
   return index < 0 ? ring[0] : ring[(index + 1) % ring.length]
 }
 
+// Keep values handed to inherited Omarchy controls inside their fixed option
+// ring. In v4.0.1 Dropdown renders an unmatched raw value with Text.AutoText.
+function valueInRing(ring, current) {
+  if (!(ring instanceof Array) || ring.length === 0) return ""
+  var value = text(current)
+  return ring.indexOf(value) >= 0 ? value : ring[0]
+}
+
 function dayForDate(schedule, dateKey) {
   var days = schedule && schedule.days instanceof Array ? schedule.days : []
   for (var i = 0; i < days.length; i++) {
@@ -510,9 +518,13 @@ function tooltip(schedule, next, now, language, timeFormat, locationOverride) {
   var prayerDay = dayForDate(schedule, next.date) || next.day
   var methodName = prayerDay ? text(prayerDay.methodName) : ""
   var method = methodName ? " \u00b7 " + methodName : ""
-  return prefix + label(next.name, language) + (arabic ? " بعد " : " in ")
+  var result = prefix + label(next.name, language) + (arabic ? " بعد " : " in ")
     + remaining(next, now, language)
     + " (" + formatClock(next.time, timeFormat) + ")" + method
+  // Omarchy 4.0.1's shared bar tooltip uses Text.AutoText. Location and
+  // calculation-method labels can come from network responses, so neutralize
+  // markup delimiters at the inherited rendering boundary.
+  return result.replace(/</g, "‹").replace(/>/g, "›")
 }
 
 function dayRows(day, showSunrise) {
@@ -718,6 +730,7 @@ if (typeof module !== "undefined") {
     tuneSummary: tuneSummary,
     schoolLabel: schoolLabel,
     nextInRing: nextInRing,
+    valueInRing: valueInRing,
     parseLocationResults: parseLocationResults,
     detectedLocationQuery: detectedLocationQuery,
     locationSettings: locationSettings,
