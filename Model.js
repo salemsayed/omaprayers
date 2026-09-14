@@ -9,6 +9,11 @@ var TUNE_ORDER = [
   "Imsak", "Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Sunset", "Isha", "Midnight"
 ]
 var TUNE_EDITABLE = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]
+var LOCATION_RESPONSE_LIMIT = 65536
+var DETECT_RESPONSE_LIMIT = 1024
+var LOCATION_RESULT_LIMIT = 6
+var LOCATION_FIELD_LIMIT = 128
+var LOCATION_ZONE_LIMIT = 64
 
 var ARABIC_NAMES = {
   Fajr: "\u0627\u0644\u0641\u062c\u0631",
@@ -283,6 +288,26 @@ function schoolLabel(school, language) {
   return optionLabel(Number(school) === 1 || text(school) === "Hanafi" ? "Hanafi" : "Shafi", language)
 }
 
+// curl >= 8.4 enforces max-filesize even without Content-Length. Disable the
+// user's curlrc so it cannot add extra transfers or automatic decompression.
+function geocodeCommand(query) {
+  return ["curl", "-q", "-fsS", "--max-time", "6",
+    "--max-filesize", String(LOCATION_RESPONSE_LIMIT),
+    "https://geocoding-api.open-meteo.com/v1/search?name="
+      + encodeURIComponent(query) + "&count=" + LOCATION_RESULT_LIMIT + "&language=en&format=json"]
+}
+
+function detectLocationCommand() {
+  return ["curl", "-q", "-fsS", "--max-time", "5",
+    "--max-filesize", String(DETECT_RESPONSE_LIMIT), "https://wttr.in/?format=%l"]
+}
+
+function locationField(value, limit) {
+  if (value === undefined || value === null) return ""
+  if (typeof value !== "string" || value.length > limit) return null
+  return value.replace(/^\s+|\s+$/g, "")
+}
+
 // Open-Meteo geocoding response to a list of choices. The timezone is why this
 // endpoint is used at all: prayer times are computed against an absolute zone,
 // and deriving one from coordinates would be a silent correctness risk. A
@@ -290,27 +315,37 @@ function schoolLabel(school, language) {
 // for "Springfield" spans two different zones, so the zone has to come from the
 // row the user actually picked.
 function parseLocationResults(raw) {
+  // Guard before JSON.parse too. The transport cap is in bytes; a decoded
+  // UTF-8 response cannot contain more UTF-16 code units than input bytes.
+  if (typeof raw !== "string" || raw.length > LOCATION_RESPONSE_LIMIT) return []
   var data = parseEnvelope(raw)
   if (!data || !(data.results instanceof Array)) return []
   var out = []
-  for (var i = 0; i < data.results.length; i++) {
+  for (var i = 0; i < Math.min(data.results.length, LOCATION_RESULT_LIMIT); i++) {
     var result = data.results[i]
-    if (!result || text(result.name) === "") continue
-    var latitude = Number(result.latitude)
-    var longitude = Number(result.longitude)
-    if (!isFinite(latitude) || !isFinite(longitude)) continue
-    if (text(result.timezone) === "") continue
-    var region = [text(result.admin1), text(result.country)]
+    if (!result || typeof result !== "object") continue
+    var name = locationField(result.name, LOCATION_FIELD_LIMIT)
+    var admin = locationField(result.admin1, LOCATION_FIELD_LIMIT)
+    var country = locationField(result.country, LOCATION_FIELD_LIMIT)
+    var countryCode = locationField(result.country_code, 2)
+    var timezone = locationField(result.timezone, LOCATION_ZONE_LIMIT)
+    if (!name || !timezone || admin === null || country === null || countryCode === null) continue
+    var latitude = result.latitude
+    var longitude = result.longitude
+    if (typeof latitude !== "number" || typeof longitude !== "number"
+        || !isFinite(latitude) || !isFinite(longitude)
+        || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) continue
+    var region = [admin, country]
       .filter(function(part) { return part !== "" })
       .join(", ")
     out.push({
-      name: text(result.name),
+      name: name,
       region: region,
-      country: text(result.country),
-      countryCode: text(result.country_code).toUpperCase(),
+      country: country,
+      countryCode: countryCode.toUpperCase(),
       latitude: latitude,
       longitude: longitude,
-      timezone: text(result.timezone)
+      timezone: timezone
     })
   }
   return out
@@ -321,9 +356,11 @@ function parseLocationResults(raw) {
 // a location: the address it derives from the connection can be a long way from
 // where the user actually is.
 function detectedLocationQuery(raw) {
-  var value = text(raw).replace(/^\s+|\s+$/g, "")
+  if (typeof raw !== "string" || raw.length > DETECT_RESPONSE_LIMIT) return ""
+  var value = raw.replace(/^\s+|\s+$/g, "")
   if (value === "") return ""
-  return value.split(",")[0].replace(/\+/g, " ").replace(/^\s+|\s+$/g, "")
+  var query = value.split(",")[0].replace(/\+/g, " ").replace(/^\s+|\s+$/g, "")
+  return query.length <= LOCATION_FIELD_LIMIT ? query : ""
 }
 
 // The four location keys are written as one unit. A partial write would leave
@@ -705,6 +742,13 @@ function filePath(url) {
 
 if (typeof module !== "undefined") {
   module.exports = {
+    LOCATION_RESPONSE_LIMIT: LOCATION_RESPONSE_LIMIT,
+    DETECT_RESPONSE_LIMIT: DETECT_RESPONSE_LIMIT,
+    LOCATION_RESULT_LIMIT: LOCATION_RESULT_LIMIT,
+    LOCATION_FIELD_LIMIT: LOCATION_FIELD_LIMIT,
+    LOCATION_ZONE_LIMIT: LOCATION_ZONE_LIMIT,
+    geocodeCommand: geocodeCommand,
+    detectLocationCommand: detectLocationCommand,
     METHODS: METHODS,
     PRAYERS: PRAYERS,
     DAY_ORDER: DAY_ORDER,

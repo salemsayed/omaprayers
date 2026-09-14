@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.4 - 2026-09-14
+
+- Limit city-search responses to 64 KiB and location-detection responses to
+  1 KiB, including transfers without a Content-Length header. Ignore local
+  curl configuration so these requests keep their bounded behavior.
+- Discard failed transfers before parsing or populating the city picker.
+- Limit geocoding to six candidates with bounded text fields and valid
+  coordinates; reject oversized detection terms and parser input.
+- Avoid a day-strip binding error while changing location timezones.
+
 ## 2.3.3 - 2026-09-14
 
 - Fix panel dismissal on Omarchy 4.0.3 so Escape, outside clicks and clicking

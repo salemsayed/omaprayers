@@ -1,5 +1,39 @@
 # OmaPrayers VM test report
 
+## Omarchy 4.0.3 bounded location responses
+
+Test date: 2026-09-14 (`Africa/Cairo`)
+
+OmaPrayers 2.3.4 was installed through `omarchy plugin add file://... --enable
+--yes` in a fresh disposable QEMU/KVM snapshot. The guest used the official
+Omarchy and settings 4.0.3-1 packages, Quickshell 0.3.0.r20.g28771c7-1,
+curl 8.21.0-1, four vCPUs, 6 GiB RAM and a 1280 by 800 display. The installed
+Model.js, Panel.qml and manifest hashes matched the release candidate.
+
+- Manifest validation and the complete automated suite passed on the host
+  and guest. ShellCheck passed on the host; it was not installed in the guest.
+- Real curl requests to local HTTP fixtures stayed within the 64 KiB search
+  and 1 KiB detection caps. Normal and exact-limit bodies succeeded;
+  oversized fixed-length, chunked and headerless bodies exited with code 63.
+  Truncated bodies and HTTP errors failed without applying their contents.
+- QML probes exercised the actual panel Process blocks, StdioCollector
+  instances and exit handlers for every fixture on both systems. A valid
+  response prefix followed by excess bytes never populated the picker or
+  emitted a detected city. A user curlrc adding another transfer and
+  decompression did not change request behavior.
+- Model tests covered raw input boundaries, a six-result limit, oversized
+  and malformed source fields, coordinate ranges and detection-term limits.
+- Live Cairo and London searches displayed six candidates with regions and
+  timezones. Selecting London updated the saved location and calculated
+  schedule. Detect filled Cairo into the search and displayed candidates
+  while the selected location and schedule remained London.
+- Screenshots of the searches, selection and detection were inspected.
+  Escape removed the keyboard-panel layer. The first city switch exposed a
+  day-strip binding reading a cleared schedule; a null guard was added and
+  the switch was repeated with no new OmaPrayers runtime errors.
+
+The earlier panel-placement checks below were not repeated in this pass.
+
 ## Omarchy 4.0.3 panel dismissal and placement
 
 Test date: 2026-09-14 (`Africa/Cairo`)

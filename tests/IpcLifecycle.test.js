@@ -25,8 +25,10 @@ test("location requests disclose their external recipients before use", () => {
   assert.match(modelSource, /citySearchPrivacy: \["City search sends your text to Open-Meteo\./)
   assert.match(locationSource, /Model\.uiLabel\("detectPrivacy", locationRoot\.host\.language\)/)
   assert.match(locationSource, /Model\.uiLabel\("citySearchPrivacy", locationRoot\.host\.language\)/)
-  assert.match(panelSource, /https:\/\/geocoding-api\.open-meteo\.com\/v1\/search/)
-  assert.match(panelSource, /https:\/\/wttr\.in\/\?format=%l/)
+  assert.match(modelSource, /https:\/\/geocoding-api\.open-meteo\.com\/v1\/search/)
+  assert.match(modelSource, /https:\/\/wttr\.in\/\?format=%l/)
+  assert.match(panelSource, /Model\.geocodeCommand\(root\.geocodeActiveQuery\)/)
+  assert.match(panelSource, /command: Model\.detectLocationCommand\(\)/)
 })
 
 test("every text surface renders network-derived values as literal plain text", () => {

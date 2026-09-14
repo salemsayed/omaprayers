@@ -575,4 +575,41 @@ test("an incomplete choice commits nothing at all", () => {
   assert.equal(Model.locationSettings({ name: "X", latitude: NaN, longitude: 2, timezone: "Europe/London" }), null)
 })
 
+const validCity = { name: "Cairo", admin1: "Cairo", country: "Egypt", country_code: "EG", latitude: 30, longitude: 31, timezone: "Africa/Cairo" }
+const cityResponse = cities => JSON.stringify({ results: cities })
+
+test("geocoding bounds the response before parsing and inspects only six rows", () => {
+  const raw = cityResponse([validCity])
+  assert.equal(Model.parseLocationResults(raw.padEnd(65536)).length, 1)
+  assert.deepEqual(Model.parseLocationResults(raw.padEnd(65537)), [])
+  assert.deepEqual(Model.parseLocationResults({ results: [validCity] }), [])
+  assert.equal(Model.parseLocationResults(cityResponse(Array(100).fill(validCity))).length, 6)
+  assert.deepEqual(Model.parseLocationResults(cityResponse([...Array(6).fill(null), validCity])), [])
+})
+
+test("geocoding rejects overlong and malformed text instead of truncating a city or zone", () => {
+  for (const [field, limit] of [["name", 128], ["admin1", 128], ["country", 128], ["timezone", 64], ["country_code", 2]]) {
+    assert.equal(Model.parseLocationResults(cityResponse([{ ...validCity, [field]: "a".repeat(limit) }])).length, 1, field)
+    for (const value of ["a".repeat(limit + 1), {}, [], 123])
+      assert.deepEqual(Model.parseLocationResults(cityResponse([{ ...validCity, [field]: value }])), [], field)
+  }
+  const bounded = { ...validCity, name: "n".repeat(128), admin1: "a".repeat(128), country: "c".repeat(128), timezone: "z".repeat(64) }
+  assert.equal(Model.parseLocationResults(cityResponse([bounded]))[0].region.length, 258)
+})
+
+test("geocoding accepts numeric boundary coordinates and rejects coerced or out-of-range ones", () => {
+  assert.equal(Model.parseLocationResults(cityResponse([{ ...validCity, latitude: -90, longitude: 180 }])).length, 1)
+  for (const [field, values] of [["latitude", [90.1, -90.1, null, "30", true]], ["longitude", [180.1, -180.1, null, "31", []]]])
+    for (const value of values)
+      assert.deepEqual(Model.parseLocationResults(cityResponse([{ ...validCity, [field]: value }])), [])
+})
+
+test("detection bounds both the response and the resulting city search term", () => {
+  assert.equal(Model.detectedLocationQuery("Cairo, Egypt".padEnd(1024)), "Cairo")
+  assert.equal(Model.detectedLocationQuery("Cairo, Egypt".padEnd(1025)), "")
+  assert.equal(Model.detectedLocationQuery("a".repeat(128)), "a".repeat(128))
+  assert.equal(Model.detectedLocationQuery("a".repeat(129) + ", Egypt"), "")
+  assert.equal(Model.detectedLocationQuery({ toString() { throw new Error("Must not coerce") } }), "")
+})
+
 console.log(`Model tests passed (${count} scenarios)`)

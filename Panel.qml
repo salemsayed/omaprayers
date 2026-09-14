@@ -209,9 +209,7 @@ Panel {
     if (geocodeProcess.running || root.geocodePendingQuery.length < 2) return
     root.geocodeActiveQuery = root.geocodePendingQuery
     root.locationStatus = ""
-    geocodeProcess.command = ["curl", "-fsS", "--max-time", "6",
-      "https://geocoding-api.open-meteo.com/v1/search?name="
-        + encodeURIComponent(root.geocodeActiveQuery) + "&count=6&language=en&format=json"]
+    geocodeProcess.command = Model.geocodeCommand(root.geocodeActiveQuery)
     geocodeProcess.running = true
   }
 
@@ -508,11 +506,14 @@ Panel {
   Process {
     id: geocodeProcess
     stdout: StdioCollector {
+      id: geocodeOutput
       waitForEnd: true
-      onStreamFinished: root.applyLocationResults(text)
     }
     onExited: function(exitCode) {
-      if (exitCode !== 0) {
+      // StdioCollector is complete before exited. Never apply a partial
+      // response from a failed or size-limited transfer.
+      if (exitCode === 0) root.applyLocationResults(geocodeOutput.text)
+      else {
         root.locationChoices = []
         root.locationStatus = Model.uiLabel("searchFailed", root.language)
       }
@@ -524,13 +525,14 @@ Panel {
 
   Process {
     id: detectProcess
-    command: ["curl", "-fsS", "--max-time", "5", "https://wttr.in/?format=%l"]
+    command: Model.detectLocationCommand()
     stdout: StdioCollector {
+      id: detectOutput
       waitForEnd: true
-      onStreamFinished: root.applyDetectedLocation(text)
     }
     onExited: function(exitCode) {
-      if (exitCode !== 0 && root.detectingLocation) {
+      if (exitCode === 0) root.applyDetectedLocation(detectOutput.text)
+      else {
         root.detectingLocation = false
         root.locationStatus = Model.uiLabel("detectFailed", root.language)
       }

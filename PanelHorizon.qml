@@ -170,9 +170,9 @@ Column {
           || modelData.name === "Isha"
         readonly property bool isCurrent: horizonRoot.containsNow(modelData)
 
-        x: horizonRoot.place(
+        x: horizonRoot.firstSegment ? horizonRoot.place(
           (modelData.start - horizonRoot.firstSegment.start) / 1440, width
-        )
+        ) : 0
         width: dayStrip.width * modelData.length / 1440
         height: dayStrip.height
         color: isCurrent

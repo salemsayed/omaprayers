@@ -56,8 +56,20 @@ would name the wrong place. After a mapped country is picked,
 method on its own.
 
 Geocoding runs through a debounced `curl`, one request in flight at a time, with
-the newest query refetched when the previous finishes. `Model.parseLocationResults`
-drops any candidate without a timezone instead of guessing one.
+the newest query refetched when the previous finishes. Curl caps geocoding at
+64 KiB and detection at 1 KiB, with six-second and five-second timeouts.
+`-q` disables user curl configuration, including extra transfers and automatic
+decompression. Curl 8.4 or newer also enforces the byte cap when the server
+omits Content-Length. The panel applies collector output only after a
+successful process exit; partial responses from failed transfers are discarded.
+
+`Model.parseLocationResults` checks raw input length before JSON parsing and
+inspects at most six candidates. Names, regions and countries are limited to
+128 characters per source field, timezones to 64, and country codes to two.
+Malformed or oversized fields and invalid coordinates discard the candidate;
+a missing timezone is never guessed. Detection separately bounds raw input
+and rejects search terms longer than 128 characters. These JavaScript string
+limits count UTF-16 code units; the transport limits count bytes.
 
 Two details of the host key handling shape the picker. `PanelKeyCatcher` uses
 `Keys.priority: Keys.BeforeItem`, so it takes keys even from a focused

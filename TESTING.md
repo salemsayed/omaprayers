@@ -1,8 +1,8 @@
 # Testing
 
-The [VM report](docs/VM-TEST-REPORT.md) includes the 2.3.3 panel dismissal and
-placement checks on Omarchy 4.0.3, followed by earlier validation runs. Use
-the checks below for the current release.
+The [VM report](docs/VM-TEST-REPORT.md) includes the 2.3.4 response-limit checks
+and 2.3.3 panel dismissal and placement checks on Omarchy 4.0.3, followed by
+earlier validation runs. Use the checks below for the current release.
 
 ## Automated
 
@@ -19,12 +19,19 @@ shellcheck prayer-zone.sh prayer-notify.sh tests/*.sh tests/run
   check, calculation properties, tuning, Umm al-Qura Hijri and schedules;
 - all 60 recorded AlAdhan calendar snapshots plus 36 UAQ Hijri rows;
 - model timing, presentation, notifications, method options, suggestions,
-  tuning helpers and city-result parsing;
+  tuning helpers and city-result parsing, including response, result-count,
+  text-field and coordinate bounds;
+- real curl transfers against a local HTTP fixture server: normal responses,
+  exact limits, oversized fixed-length, chunked and headerless bodies,
+  truncated bodies, HTTP errors and an inherited curlrc;
 - IPC relocation, timezone validation and DST transitions, legacy cache-file
   cleanup, notification deduplication and delivery retries;
 - panel dismissal with the readonly bar API, the legacy writable property,
   and an absent bar;
-- a Quickshell probe that imports and runs `Engine.js` through QML.
+- Quickshell probes that import and run `Engine.js` through QML and exercise
+  the panel's actual location-process collectors and exit handlers against
+  those HTTP fixtures. These probes skip when `qs` is unavailable; the real
+  curl transfer checks still run.
 
 CI validates the manifest against current Omarchy Quattro and runs
 `tests/run`; run the same local suite before publishing.

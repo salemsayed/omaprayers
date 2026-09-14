@@ -68,7 +68,7 @@ single glyph:
 
 - Omarchy 4 (Quattro)
 - Bash, GNU coreutils, `jq` and installed `tzdata`
-- `curl` for city search and the optional Detect button
+- `curl` 8.4 or newer for city search and the optional Detect button
 - `noto-fonts` for Arabic mode
 
 Prayer-time calculation does not require network access.
