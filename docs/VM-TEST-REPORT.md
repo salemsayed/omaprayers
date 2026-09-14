@@ -1,5 +1,44 @@
 # OmaPrayers VM test report
 
+## Omarchy 4.0.3 panel dismissal and placement
+
+Test date: 2026-09-14 (`Africa/Cairo`)
+
+OmaPrayers 2.3.3, including PRs #4 and #2, was installed through
+`omarchy plugin add file://... --enable --yes` in a disposable QEMU/KVM
+snapshot. The guest used the official `omarchy 4.0.3-1` and
+`omarchy-settings 4.0.3-1` packages, Quickshell
+`0.3.0.r20.g28771c7-1`, 4 vCPUs, 6 GiB RAM, and a 1280 by 800 display.
+Input was delivered through QEMU's virtual keyboard and USB tablet.
+
+- Clicking the right-side widget opened the panel at the bar's center by
+  default. Escape, clicking outside, and clicking the widget again each
+  removed the `omarchy-keyboard-panel` layer from `hyprctl layers`.
+- Hovering the bar's center before dismissal did not trap input. Five
+  additional click, center-hover and Escape cycles passed. Desktop workspace
+  shortcuts worked after dismissal.
+- The Display section's Center panel switch moved the panel to the clicked
+  widget, wrote `centerOnBar: false`, and retained that setting after closing,
+  reopening, and restarting the shell. The Arabic switch also restored
+  centering and persisted `true`.
+- Screenshots were inspected for centered and anchored positions, Horizon
+  and Compact layouts, English and Arabic, and the English and Arabic
+  settings sections. The panel stayed inside the screen at the right edge.
+- A left vertical bar placed the panel beside its widget with centering off
+  and at the screen's vertical center with centering on. Escape and outside
+  clicks removed the overlay in these configurations too.
+- The full automated suite passed on the host and in the guest, including
+  the engine's QML parity probe. Manifest validation passed on both systems,
+  and host ShellCheck passed. The new panel lifecycle regression test failed
+  against the old readonly-property assignment and passed with PR #4.
+- The guest shell log contained no OmaPrayers runtime errors or readonly
+  assignment errors. Moving the bar produced existing first-party duplicate
+  IPC warnings; portal and absent Bluetooth-service warnings were also
+  present.
+
+Physical multi-monitor input and bottom/right bar orientations were not
+retested in this pass.
+
 ## Omarchy 4.0.1 compatibility rerun
 
 Test date: 2026-08-31 (`Africa/Cairo`)

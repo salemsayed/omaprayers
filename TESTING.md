@@ -1,6 +1,7 @@
 # Testing
 
-The [VM report](docs/VM-TEST-REPORT.md) is a historical pre-2.3.0 report. Use
+The [VM report](docs/VM-TEST-REPORT.md) includes the 2.3.3 panel dismissal and
+placement checks on Omarchy 4.0.3, followed by earlier validation runs. Use
 the checks below for the current release.
 
 ## Automated
@@ -21,6 +22,8 @@ shellcheck prayer-zone.sh prayer-notify.sh tests/*.sh tests/run
   tuning helpers and city-result parsing;
 - IPC relocation, timezone validation and DST transitions, legacy cache-file
   cleanup, notification deduplication and delivery retries;
+- panel dismissal with the readonly bar API, the legacy writable property,
+  and an absent bar;
 - a Quickshell probe that imports and runs `Engine.js` through QML.
 
 CI validates the manifest against current Omarchy Quattro and runs

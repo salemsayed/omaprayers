@@ -79,6 +79,7 @@ AlAdhan method IDs. Calculation is local.
 | `barDisplay` | `Strip + countdown` | `Strip + countdown`, `Icon only`, `Name + countdown`, `Name + time`, `Countdown only` |
 | `showSunrise` | `true` | Show the sunrise row |
 | `showNightMarkers` | `true` | Show Imsak, midnight, first and last third |
+| `centerOnBar` | `true` | Center the panel on the bar; disable to anchor it to the clicked widget |
 | `highlightBeforeMinutes` | `15` | Accent the next prayer this many minutes ahead |
 
 All of these except `arabicFont` are also on the panel (footer buttons, the

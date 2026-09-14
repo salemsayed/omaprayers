@@ -85,10 +85,10 @@ if you prefer another spot.
 
 ## Configure
 
-Location, calculation method, Asr school, six tuning values, layout, bar
-label, clock format, language, sunrise and night markers, notifications and
-the accent lead time are on the panel's settings section. Press `M` to open
-the method picker directly.
+Location, calculation method, Asr school, six tuning values, layout, panel
+centering, bar label, clock format, language, sunrise and night markers,
+notifications and the accent lead time are on the panel's settings section.
+Press `M` to open the method picker directly.
 
 Use `omarchy bar set` for the same settings and for advanced calculation
 options:
