@@ -85,6 +85,7 @@ var UI_LABELS = {
   barLabel: ["Bar label", "شريط النظام"],
   sunrise: ["Sunrise row", "صف الشروق"],
   nightMarkers: ["Night markers", "علامات الليل"],
+  centerPanel: ["Center panel", "توسيط اللوحة"],
   notifications: ["Notifications", "التنبيهات"],
   accentLead: ["Accent lead", "التلوين المسبق"],
   minutes: ["min", "دقيقة"],

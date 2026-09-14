@@ -606,6 +606,27 @@ Column {
 
     Item {
       width: parent.width
+      height: Math.max(Style.space(26), centerSwitch.height)
+
+      RowLabel {
+        anchors.left: parent.left
+        anchors.right: centerSwitch.left
+        anchors.rightMargin: Style.space(8)
+        anchors.verticalCenter: parent.verticalCenter
+        text: Model.uiLabel("centerPanel", displayRoot.host.language)
+      }
+
+      SettingSwitch {
+        id: centerSwitch
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        checked: displayRoot.host.centerOnBar
+        onToggled: displayRoot.host.setSetting("centerOnBar", !displayRoot.host.centerOnBar)
+      }
+    }
+
+    Item {
+      width: parent.width
       height: Math.max(Style.space(26), notifySwitch.height)
 
       RowLabel {
