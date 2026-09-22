@@ -8,6 +8,6 @@ jq -e . manifest.json >/dev/null
 node tests/Engine.test.js
 node tests/Aladhan.test.js
 node tests/Model.test.js
-node --test tests/IpcLifecycle.test.js tests/PanelLifecycle.test.js tests/NotificationLead.test.js tests/LocationNetwork.test.js
+node --test tests/Nojumi.test.js tests/IpcLifecycle.test.js tests/PanelLifecycle.test.js tests/NotificationLead.test.js tests/LocationNetwork.test.js
 bash tests/Scripts.test.sh
 bash tests/EngineQml.test.sh

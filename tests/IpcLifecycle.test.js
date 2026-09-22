@@ -40,7 +40,7 @@ test("every text surface renders network-derived values as literal plain text", 
   const plainSectionHeaders = presentationSource.match(
     /\bPanelSectionHeader\s*\{\s*textFormat:\s*Text\.PlainText\b/g
   ) || []
-  assert.equal(textItems.length, 46)
+  assert.equal(textItems.length, 47)
   assert.equal(plainTextItems.length, textItems.length)
   assert.equal(sectionHeaders.length, 3)
   assert.equal(plainSectionHeaders.length, sectionHeaders.length)

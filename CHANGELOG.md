@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.0 - 2026-09-22
+
+- Add Nojumi (Astronomical Research Center, Qom), local method ID `1000`,
+  with English and Arabic names. Thanks to @szaidi-code for PR #6.
+- Use Fajr 18°, Maghrib 4.5° in Iran and 3.75° elsewhere, standard Asr,
+  and sunset-to-Fajr midnight. Label the 15° Isha fallback as estimated.
+- Preserve saved Asr and midnight preferences when switching methods.
+  Existing methods, including Qum and Tehran, retain their prior behavior.
+- Keep Fajr readable and wrap crowded night labels in the Horizon layout
+  when using 12-hour clocks.
+
 ## 2.4.0 - 2026-09-22
 
 - Use Accent lead for both the bar highlight and advance prayer reminders.

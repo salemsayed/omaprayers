@@ -135,3 +135,18 @@ fails when a timing moves by more than one minute or when metadata, Hijri,
 the method catalog, or response structure changes. It is intentionally not
 in `tests/run`. The post-record run on 2026-08-21 reported nine one-minute
 Asr variations and no blocking drift.
+
+## Nojumi (local method 1000)
+
+Source: https://english.nojumi.org/prayertimes (checked 2026-09-22).
+The page publishes Fajr 18°. Its location handler chooses Maghrib 4.5°
+when `countryCode === "IR"` or `zoneName === "Asia/Tehran"`, otherwise 3.75°.
+The plugin uses the configured IANA timezone for this distinction.
+The source does not publish an Isha angle or an Asr time. Isha 15° is an
+explicitly labeled plugin estimate; standard-shadow Asr is a plugin convention.
+Nojumi uses sunset-to-next-Fajr midnight and ignores, without modifying,
+the stored school and midnight preferences. Other methods are unchanged.
+
+Nojumi is not included in the AlAdhan corpus. Regression checks cover its
+parameters, both Maghrib branches, effective school and midnight through
+engine and panel paths, preference restoration, and Node/QML parity.

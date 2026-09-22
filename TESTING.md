@@ -1,7 +1,7 @@
 # Testing
 
-The [desktop report](docs/DESKTOP-TEST-REPORT.md) records the Accent lead
-notification checks on the current Omarchy 4.0.4 desktop.
+The [desktop report](docs/DESKTOP-TEST-REPORT.md) records the Nojumi method, preference restoration, layouts, and
+Accent lead notification checks on the current Omarchy 4.0.4 desktop.
 
 The [VM report](docs/VM-TEST-REPORT.md) includes the 2.3.4 response-limit checks
 and 2.3.3 panel dismissal and placement checks on Omarchy 4.0.3, followed by
@@ -17,9 +17,11 @@ shellcheck prayer-zone.sh prayer-notify.sh tests/*.sh tests/run
 
 `tests/run` covers:
 
-- the ES5/QML-compatible engine, all 24 method IDs, official timetable
+- the ES5/QML-compatible engine, all 25 method IDs, official timetable
   fixtures, seeded adhan-js regular and polar fuzz, an independent solar
   check, calculation properties, tuning, Umm al-Qura Hijri and schedules;
+- Nojumi conventions, both regional Maghrib angles, configuration preservation,
+  switching methods through actual panel handlers, and schedule metadata;
 - all 60 recorded AlAdhan calendar snapshots plus 36 UAQ Hijri rows;
 - model timing, presentation, notifications, method options, suggestions,
   tuning helpers and city-result parsing, including response, result-count,

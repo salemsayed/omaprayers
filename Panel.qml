@@ -50,10 +50,13 @@ Panel {
   readonly property string longitude: String(setting("longitude", "31.2357"))
   readonly property string timezone: String(setting("timezone", "Africa/Cairo"))
   readonly property int calculationMethod: Math.round(Model.number(setting("calculationMethod", 5), 5))
-  readonly property bool hanafi: Model.bool(setting("hanafi", false))
+  // Nojumi uses standard Asr without changing the saved school preference.
+  readonly property bool hanafiSupported: Model.hanafiSupported(calculationMethod)
+  readonly property bool hanafi: hanafiSupported && Model.bool(setting("hanafi", false))
   readonly property int school: hanafi ? 1 : 0
   readonly property int latitudeAdjustmentMethod: latitudeRule(String(setting("highLatitudeRule", "Angle based")))
-  readonly property int midnightMode: String(setting("midnightMode", "Standard")) === "Jafari" ? 1 : 0
+  readonly property int midnightMode: Engine.effectiveMidnightMode(calculationMethod,
+    String(setting("midnightMode", "Standard")) === "Jafari" ? 1 : 0)
   readonly property string shafaq: shafaqValue(String(setting("shafaq", "General")))
   readonly property int hijriAdjustment: Math.round(Model.number(setting("hijriAdjustment", 0), 0))
   readonly property string tune: String(setting("tune", "0,0,0,0,0,0,0,0,0"))
@@ -172,6 +175,11 @@ Panel {
     persistSettings(values)
   }
 
+  // Keep school and midnight preferences intact when switching profiles.
+  function setCalculationMethod(method) {
+    persistSettings({ calculationMethod: method })
+  }
+
   function cycleSetting(key, ring) {
     var next = Model.nextInRing(ring, root.setting(key, ring[0]))
     if (next !== "") setSetting(key, next)
@@ -282,7 +290,7 @@ Panel {
     if (!root.pendingMethodSuggestion) return
     var method = root.pendingMethodSuggestion.id
     root.pendingMethodSuggestion = null
-    root.setSetting("calculationMethod", method)
+    root.setCalculationMethod(method)
   }
 
   function dismissMethodSuggestion() {

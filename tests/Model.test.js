@@ -363,13 +363,20 @@ test("method options follow catalog order and keep string values", () => {
   const options = Model.methodOptions("English")
   assert.deepEqual(options.map(option => option.value), [
     "3", "2", "5", "4", "1", "7", "0", "8", "9", "10", "11", "12",
-    "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "99"
+    "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "1000", "99"
   ])
   assert.deepEqual(options.map(option => option.value), Model.METHODS.map(method => String(method.id)))
   assert.equal(options.find(option => option.value === "5").label,
     "Egyptian General Authority of Survey")
   assert.equal(options.find(option => option.value === "5").description,
     "Fajr 19.5° · Isha 17.5°")
+  assert.equal(options.find(option => option.value === "1000").description,
+    "Fajr 18° · Maghrib 3.75° / 4.5° Iran · Isha 15° (estimated)")
+  assert.equal(options.find(option => option.value === "1000").label, "Nojumi - Astronomical Research Center (A.R.C.), Qom")
+  assert.equal(Model.methodOptions("Arabic").find(option => option.value === "1000").label, "نجومي - مركز البحوث والدراسات الفلكية")
+  assert.equal(Model.hanafiSupported(1000), false)
+  assert.equal(Model.hanafiSupported("0"), true)
+  assert.equal(Model.hanafiSupported(5), true)
 })
 
 test("method options localize labels and describe all custom values as angles", () => {

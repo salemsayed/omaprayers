@@ -1,3 +1,55 @@
+# Nojumi desktop verification (2.5.0)
+
+Test date: 2026-09-22, Africa/Cairo. Omarchy 4.0.4 desktop with Quickshell
+and one 2560 × 1440 display. Runtime files were installed into the user's
+plugin directory, the shell was restarted, and screenshots of the actual
+running widget were inspected.
+
+- Searching for `Nojumi` and selecting it through the real picker succeeds.
+  The original formal-name-only search failed; the searchable name now
+  includes Nojumi in English and نجومي in Arabic.
+- Starting with Hanafi enabled and Standard midnight, selecting Nojumi
+  preserves both saved settings while displaying standard Asr and
+  sunset-to-Fajr midnight. Switching back to Egypt through the picker
+  restores Hanafi Asr and Standard midnight without reconfiguring either.
+- At 6th of October City on September 22, Nojumi displayed Asr 16:16,
+  Maghrib 19:07 and Midnight 00:09. Returning to Egypt restored Hanafi Asr
+  17:10 and Midnight 00:49.
+- At Qom (34.64, 50.88, Asia/Tehran), Nojumi displayed Fajr 04:30,
+  Dhuhr 11:59, Asr 15:26, Maghrib 18:21, Isha 19:13 and Midnight 23:17.
+  Both regional branches matched the engine outputs. This checks UI/engine
+  integration, not independent verification against an official timetable.
+- Compact and Horizon, English and Arabic, and the estimated-Isha note
+  were inspected. A 12-hour Horizon layout issue found during testing was
+  corrected: Fajr remains visible and night labels wrap without overlap.
+- The complete automated suite, actual Node/Quickshell parity, manifest
+  validation, ShellCheck and whitespace checks passed. Six additional
+  Nojumi regression cases cover engine conventions, regional angles,
+  tuning, every existing method's school and midnight options, actual panel
+  switching handlers, bilingual disclosure, and schedule metadata.
+- A separate comparison against the 2.4.0 engine covered all 24 existing
+  methods, four locations, four seasons, both schools and both midnight
+  modes: all 1,536 outputs were identical.
+
+Live Nojumi notification checks passed with the panel closed: one English
+five-minute advance reminder and one Arabic prayer-time notification with
+Accent lead Off. Real D-Bus delivery and deduplication keys were checked;
+toast screenshots were inspected. Temporary Dhuhr tuning moved the event
+boundaries; the clock, timer, engine and notification helper were unchanged.
+
+The original widget settings and notification deduplication state were
+restored exactly. No OmaPrayers runtime errors appeared in the final shell
+log. The tested runtime remains installed.
+
+Evidence is stored locally in `/tmp/omaprayers-2.5-device/`; screenshots of
+this personal desktop are not committed. Physical multi-monitor behavior,
+suspend/resume, and an independent Nojumi timetable corpus were not tested
+in this release. Existing automated tests cover notification deduplication,
+resume grace, retries and polar calculation paths. Isha remains an explicitly
+labeled estimate because the source does not publish an Isha parameter.
+
+---
+
 # Accent lead desktop verification
 
 Test date: 2026-09-22, Africa/Cairo. Current desktop: Omarchy 4.0.4-1,

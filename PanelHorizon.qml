@@ -355,9 +355,9 @@ Column {
             id: tableName
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(implicitWidth, parent.width - (imsakName.visible
+            width: Math.max(0, Math.min(implicitWidth, parent.width - (imsakName.visible
               ? imsakName.implicitWidth + imsakClock.implicitWidth + Style.space(8)
-              : 0))
+              : 0)))
             text: Model.label(tableRow.modelData.name, host.language)
             color: tableRow.tone
             font.family: host.nameFontFamily
@@ -370,6 +370,8 @@ Column {
             textFormat: Text.PlainText
             id: imsakName
             visible: tableRow.imsakTiming !== null
+              && tableNameSlot.width >= tableName.implicitWidth + imsakName.implicitWidth
+                + imsakClock.implicitWidth + Style.space(8)
             anchors.left: tableName.right
             anchors.leftMargin: Style.space(5)
             anchors.baseline: tableName.baseline
@@ -384,6 +386,8 @@ Column {
             textFormat: Text.PlainText
             id: imsakClock
             visible: tableRow.imsakTiming !== null
+              && tableNameSlot.width >= tableName.implicitWidth + imsakName.implicitWidth
+                + imsakClock.implicitWidth + Style.space(8)
             anchors.left: imsakName.right
             anchors.leftMargin: Style.space(3)
             anchors.baseline: tableName.baseline
@@ -402,7 +406,7 @@ Column {
           anchors.right: windowSlot.left
           anchors.rightMargin: Style.space(9)
           anchors.verticalCenter: parent.verticalCenter
-          width: Style.space(54)
+          width: Math.max(Style.space(54), implicitWidth)
           text: Model.formatClock(tableRow.modelData.value.time, host.timeFormat)
           color: tableRow.tone
           font.family: host.fontFamily
@@ -515,15 +519,10 @@ Column {
       }
     }
 
-    Row {
+    Flow {
       id: nightLabels
-
-      readonly property real fillerWidth: Math.max(0, (width
-        - maghribLabel.implicitWidth - firstThirdLabel.implicitWidth
-        - lastThirdLabel.implicitWidth - fajrLabel.implicitWidth) / 3)
-
       width: parent.width
-      spacing: 0
+      spacing: Style.space(12)
 
       NightLabel {
         id: maghribLabel
@@ -531,23 +530,17 @@ Column {
         includeClock: false
       }
 
-      Item { width: nightLabels.fillerWidth; height: 1 }
-
       NightLabel {
         id: firstThirdLabel
         markerName: "Firstthird"
         includeClock: true
       }
 
-      Item { width: nightLabels.fillerWidth; height: 1 }
-
       NightLabel {
         id: lastThirdLabel
         markerName: "Lastthird"
         includeClock: true
       }
-
-      Item { width: nightLabels.fillerWidth; height: 1 }
 
       NightLabel {
         id: fajrLabel

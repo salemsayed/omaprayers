@@ -78,6 +78,8 @@ ShellRoot {
       var result = {
         cairo: Engine.buildSchedule(cairoConfig, cairoZone, 1787227200000),
         tromso: Engine.buildSchedule(tromsoConfig, tromsoZone, 1781956800000),
+        nojumi: Engine.dayTimes({ method: 1000, latitude: 34.64, longitude: 50.88,
+          timezone: "Asia/Tehran", school: 1, midnightMode: 0 }, 2026, 9, 22, null),
         model: {
           method: Model.methodShortName(5, ""),
           tune: Model.tuneSummary("0,2,0,0,0,0,0,-3,0", "English")

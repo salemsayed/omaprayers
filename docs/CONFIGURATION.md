@@ -13,9 +13,9 @@ panel, the Omarchy settings UI, or `omarchy bar set`.
 | `longitude` | `31.2357` | City picker | Prayer-location longitude |
 | `timezone` | `Africa/Cairo` | City picker | IANA timezone of that location |
 | `calculationMethod` | `5` | Yes | Local calculation method; IDs are listed below |
-| `hanafi` | `false` | Yes | `false` for Shafi Asr; `true` for Hanafi Asr |
+| `hanafi` | `false` | Yes | `false` for Shafi Asr; `true` for Hanafi Asr; preserved but inactive for Nojumi `1000` |
 | `highLatitudeRule` | `Angle based` | No | `Middle of the night`, `One seventh`, `Angle based` |
-| `midnightMode` | `Standard` | No | `Standard` or `Jafari` |
+| `midnightMode` | `Standard` | No | `Standard` or `Jafari`; Nojumi always uses Jafari without changing this preference |
 | `shafaq` | `General` | No | `General`, `Red`, `White` for method 15 |
 | `hijriAdjustment` | `0` | No | Hijri date offset, -2 to +2 days |
 | `tune` | nine zeroes | Six values | Minute offsets: Imsak,Fajr,Sunrise,Dhuhr,Asr,Maghrib,Sunset,Isha,Midnight |
@@ -39,7 +39,8 @@ respectively. Other methods ignore this setting.
 ### Calculation methods
 
 The IDs are unchanged from earlier releases and remain compatible with the
-AlAdhan method IDs. Calculation is local.
+AlAdhan method IDs. Nojumi has no AlAdhan counterpart and uses the local
+ID `1000`. Calculation is local.
 
 | ID | Method |
 |---:|---|
@@ -66,7 +67,20 @@ AlAdhan method IDs. Calculation is local.
 | `21` | Morocco |
 | `22` | Comunidade Islâmica de Lisboa |
 | `23` | Ministry of Awqaf, Jordan |
+| `1000` | Astronomical Research Center (A.R.C.), Qom (Nojumi) |
 | `99` | Custom |
+
+Nojumi is the profile published by the Astronomical Research Center in Qom
+([nojumi.org](https://english.nojumi.org/prayertimes)): Fajr at 18°, Maghrib
+at 3.75° outside Iran and 4.5° in Iran, and sunset-to-Fajr legal midnight.
+The source publishes no Isha parameter, so the plugin's 15° fallback is used.
+
+Nojumi uses standard Asr and sunset-to-Fajr midnight. Its Asr control is
+disabled, but neither the saved `hanafi` preference nor `midnightMode` is
+overwritten. Both apply again when another method is selected. Existing
+methods, including Qum (`0`) and Tehran (`7`), retain their previous behavior.
+The picker labels the 15° Isha fallback as estimated in both languages.
+Local method IDs start at `1000`, separate from the AlAdhan-compatible IDs.
 
 ## Presentation
 
